@@ -87,6 +87,7 @@ public class TestBase extends AndroidTestCase {
         this.apiKey = String.valueOf(key);
         this.token = token;
         this.sessionId = sessionId;
+        this.session = new AccPackSession(this.context, this.apiKey, this.sessionId);
     }
 
     protected void tearDown() throws Exception {
