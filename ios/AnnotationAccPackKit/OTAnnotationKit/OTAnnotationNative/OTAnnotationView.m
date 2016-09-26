@@ -6,9 +6,9 @@
 
 #import "OTAnnotationView.h"
 
-#import <OTKAnalytics/OTKLogger.h>
+#import "AnnLoggingWrapper.h"
+
 #import "OTAnnotator.h"
-#import "OTAnnotationView+Signaling.h"
 
 #import "Constants.h"
 
@@ -16,30 +16,15 @@
 @property (nonatomic) OTAnnotationTextView *currentEditingTextView;
 @property (nonatomic) OTAnnotationPath *currentDrawPath;
 @property (nonatomic) OTAnnotationDataManager *annotationDataManager;
-@property (weak, nonatomic) OTAnnotator *annotator;
 @end
 
 @implementation OTAnnotationView
-
-- (OTAnnotator *)annotator {
-    if (!_annotator) {
-        if ([OTAnnotator annotator].annotationView == self) {
-            _annotator = [OTAnnotator annotator];
-        }
-    }
-    return _annotator;
-}
 
 - (instancetype)initWithFrame:(CGRect)frame {
     
     if (self = [super initWithFrame:frame]) {
         
-        [OTKLogger analyticsWithClientVersion:KLogClientVersion
-                                       source:[[NSBundle mainBundle] bundleIdentifier]
-                                  componentId:kLogComponentIdentifier
-                                         guid:[[NSUUID UUID] UUIDString]];
-        
-        [OTKLogger logEventAction:KLogActionInitialize variation:KLogVariationSuccess completion:nil];
+        [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionInitialize variation:KLogVariationSuccess completion:nil];
         
         _annotationDataManager = [[OTAnnotationDataManager alloc] init];
         [self setBackgroundColor:[UIColor clearColor]];
@@ -53,7 +38,7 @@
         _currentAnnotatable = annotatable;
         _currentDrawPath = (OTAnnotationPath *)annotatable;
         [self addAnnotatable:annotatable];
-        [OTKLogger logEventAction:KLogActionFreeHand variation:KLogVariationSuccess completion:nil];
+        [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionFreeHand variation:KLogVariationSuccess completion:nil];
     }
     else if ([annotatable isKindOfClass:[OTAnnotationTextView class]]) {
         _currentAnnotatable = annotatable;
@@ -93,13 +78,13 @@
     if ([annotatable isMemberOfClass:[OTAnnotationPath class]]) {
         [self.annotationDataManager pop];
         [self setNeedsDisplay];
-        [OTKLogger logEventAction:KLogActionErase variation:KLogVariationSuccess completion:nil];
+        [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionErase variation:KLogVariationSuccess completion:nil];
     }
     else if ([annotatable isMemberOfClass:[OTAnnotationTextView class]]) {
         [self.annotationDataManager pop];
         OTAnnotationTextView *textfield = (OTAnnotationTextView *)annotatable;
         [textfield removeFromSuperview];
-        [OTKLogger logEventAction:KLogActionErase variation:KLogVariationSuccess completion:nil];
+        [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionErase variation:KLogVariationSuccess completion:nil];
     }
 }
 
@@ -107,7 +92,7 @@
     
     [self.annotationDataManager pop];
     [self setNeedsDisplay];
-    [OTKLogger logEventAction:KLogActionErase variation:KLogVariationSuccess completion:nil];
+    [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionErase variation:KLogVariationSuccess completion:nil];
 }
 
 - (void)commitCurrentAnnotatable {
@@ -120,8 +105,8 @@
     _currentEditingTextView = nil;
 }
 
-- (UIImage *)captureScreen {
-    [OTKLogger logEventAction:KLogActionScreenCapture variation:KLogVariationSuccess completion:nil];
+- (UIImage *)captureFullScreen {
+    [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionScreenCapture variation:KLogVariationSuccess completion:nil];
     CGRect screenRect = [[UIScreen mainScreen] bounds];
     UIGraphicsBeginImageContext(screenRect.size);
     CGContextRef ctx = UIGraphicsGetCurrentContext();
@@ -131,6 +116,21 @@
     UIGraphicsEndImageContext();
     
     return newImage;
+}
+
+- (UIImage *)captureScreenWithView:(UIView *)view {
+    
+    [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionScreenCapture variation:KLogVariationSuccess completion:nil];
+    if (view == [UIApplication sharedApplication].keyWindow.rootViewController.view) {
+        return [self captureFullScreen];
+    }
+    else {
+        UIGraphicsBeginImageContext(view.frame.size);
+        [view.layer renderInContext:UIGraphicsGetCurrentContext()];
+        UIImage *outputImage = UIGraphicsGetImageFromCurrentImageContext();
+        UIGraphicsEndImageContext();
+        return outputImage;
+    }
 }
 
 - (void)drawRect:(CGRect)rect {
@@ -154,14 +154,14 @@
     }
     UITouch *touch = [touches anyObject];
     
-    if (self.annotator && self.annotator.isSendAnnotationEnabled){
-        [self signalAnnotatble:_currentAnnotatable touch:touch addtionalInfo:nil];
+    if (self.annotationViewDelegate) {
+        [self.annotationViewDelegate annotationView:self touchBegan:touch withEvent:event];
     }
     
     CGPoint touchPoint = [touch locationInView:touch.view];
     OTAnnotationPoint *annotatinPoint = [OTAnnotationPoint pointWithX:touchPoint.x andY:touchPoint.y];
     [_currentDrawPath startAtPoint:annotatinPoint];
-    [OTKLogger logEventAction:KLogActionStartDrawing variation:KLogVariationSuccess completion:nil];
+    [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionStartDrawing variation:KLogVariationSuccess completion:nil];
 }
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
@@ -169,8 +169,8 @@
     if (_currentDrawPath) {
         UITouch *touch = [touches anyObject];
         
-        if (self.annotator && self.annotator.isSendAnnotationEnabled){
-            [self signalAnnotatble:_currentAnnotatable touch:touch addtionalInfo:nil];
+        if (self.annotationViewDelegate) {
+            [self.annotationViewDelegate annotationView:self touchMoved:touch withEvent:event];
         }
         
         CGPoint touchPoint = [touch locationInView:touch.view];
@@ -185,8 +185,8 @@
     if (_currentDrawPath) {
         UITouch *touch = [touches anyObject];
         
-        if (self.annotator && self.annotator.isSendAnnotationEnabled){
-            [self signalAnnotatble:_currentAnnotatable touch:touch addtionalInfo:@{@"endPoint":@(YES)}];
+        if (self.annotationViewDelegate) {
+            [self.annotationViewDelegate annotationView:self touchEnded:touch withEvent:event];
         }
         
         CGPoint touchPoint = [touch locationInView:touch.view];
@@ -194,7 +194,7 @@
         [_currentDrawPath drawToPoint:annotatinPoint];
         [self setNeedsDisplay];
         [self commitCurrentAnnotatable];
-        [OTKLogger logEventAction:KLogActionEndDrawing variation:KLogVariationSuccess completion:nil];
+        [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionEndDrawing variation:KLogVariationSuccess completion:nil];
     }
 }
 

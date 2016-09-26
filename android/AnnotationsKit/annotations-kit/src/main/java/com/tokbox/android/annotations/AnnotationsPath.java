@@ -7,6 +7,9 @@ import android.graphics.PointF;
 import java.util.ArrayList;
 import java.util.UUID;
 
+/**
+ * Defines a customizable Path for Android
+ */
 public class AnnotationsPath extends Path {
 
     private UUID id;

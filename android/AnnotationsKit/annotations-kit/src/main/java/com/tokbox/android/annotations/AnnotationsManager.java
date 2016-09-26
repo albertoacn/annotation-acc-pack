@@ -14,6 +14,9 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 
+/**
+ * Defines the annotations manager
+ */
 public class AnnotationsManager {
 
     private ArrayList<Annotatable> mAnnotatableList;
@@ -23,7 +26,10 @@ public class AnnotationsManager {
         mAnnotatableList = new ArrayList<Annotatable>();
     }
 
-    public void addAnnotatable(Annotatable annotatable){
+    public void addAnnotatable(Annotatable annotatable) throws Exception{
+        if ( annotatable == null ) {
+            throw new Exception("Annotatable cannot be null.");
+        }
         mAnnotatableList.add(annotatable);
         if ( annotatable.getPath() != null){
             annotatable.setType (Annotatable.AnnotatableType.PATH);

@@ -6,6 +6,7 @@
 
 #import "OTAnnotationToolbarButton.h"
 #import "UIButton+AutoLayoutHelper.h"
+#import "UIView+Helper.h"
 
 @implementation OTAnnotationToolbarButton
 
@@ -31,6 +32,24 @@
 - (void)didMoveToSuperview {
     if (!self.superview) return;
     [self addCenterConstraints];
+}
+
+@end
+
+
+@implementation OTAnnotationToolbarDoneButton
+
+- (instancetype)init {
+    if (self = [super init]) {
+        self.translatesAutoresizingMaskIntoConstraints = NO;
+        self.imageEdgeInsets = UIEdgeInsetsMake(2, 2, 2, 2);
+    }
+    return self;
+}
+
+- (void)didMoveToSuperview {
+    if (!self.superview) return;
+    [self addAttachedLayoutConstantsToSuperview];
 }
 
 @end

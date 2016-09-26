@@ -9,9 +9,12 @@ import android.view.WindowManager;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-
+/**
+ * Defines the layout for the annotations toolbar
+ */
 public class AnnotationsToolbar extends LinearLayout {
 
     private View rootView;
@@ -20,10 +23,10 @@ public class AnnotationsToolbar extends LinearLayout {
     private ImageButton mTypeBtn;
     private ImageButton mScreenshotBtn;
     private ImageButton mPickerColorBtn;
-    private TextView mDoneBtn;
+    private ImageButton mDoneBtn;
 
     private Context mContext;
-    private LinearLayout mMainToolbar;
+    private RelativeLayout mMainToolbar;
     private LinearLayout mColorToolbar;
     private HorizontalScrollView mColorScrollView;
 
@@ -59,8 +62,12 @@ public class AnnotationsToolbar extends LinearLayout {
      * Constructor
      * @param context Application context
      **/
-    public AnnotationsToolbar(Context context) {
+    public AnnotationsToolbar(Context context) throws Exception {
         super(context);
+
+        if ( context == null ){
+            throw new Exception("Context cannot be null");
+        }
         mContext = context;
 
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
@@ -74,8 +81,13 @@ public class AnnotationsToolbar extends LinearLayout {
      * @param context Application context
      * @param attrs A collection of attributes
      **/
-    public AnnotationsToolbar(Context context, AttributeSet attrs) {
+    public AnnotationsToolbar(Context context, AttributeSet attrs) throws Exception {
         super(context, attrs);
+
+        if ( context == null ){
+            throw new Exception("Context cannot be null");
+        }
+
         mContext = context;
 
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
@@ -86,7 +98,7 @@ public class AnnotationsToolbar extends LinearLayout {
 
     private void init() {
         rootView = inflate(mContext, R.layout.annotations_toolbar, this);
-        mMainToolbar = (LinearLayout) rootView.findViewById(R.id.main_toolbar);
+        mMainToolbar = (RelativeLayout) rootView.findViewById(R.id.main_toolbar);
 
         mColorToolbar = (LinearLayout) rootView.findViewById(R.id.color_toolbar);
         mColorScrollView = (HorizontalScrollView) rootView.findViewById(R.id.color_view);
@@ -95,7 +107,7 @@ public class AnnotationsToolbar extends LinearLayout {
         mTypeBtn = (ImageButton) mMainToolbar.findViewById(R.id.type_tool);
         mScreenshotBtn = (ImageButton) mMainToolbar.findViewById(R.id.screenshot);
         mEraseBtn = (ImageButton) mMainToolbar.findViewById(R.id.erase);
-        mDoneBtn = (TextView) mMainToolbar.findViewById(R.id.done);
+        mDoneBtn = (ImageButton) mMainToolbar.findViewById(R.id.done);
 
         final int mCount = mColorToolbar.getChildCount();
 
@@ -133,6 +145,12 @@ public class AnnotationsToolbar extends LinearLayout {
             mColorToolbar.getChildAt(i).setSelected(false);
         }
 
+        int color = getResources().getColor(R.color.picker_color_orange);
+        mPickerColorBtn.setColorFilter(color);
+        if  (mActionsListener != null ){
+            mActionsListener.onColorSelected(color);
+        }
+        mDoneBtn.setVisibility(GONE);
     }
 
 
@@ -204,6 +222,10 @@ public class AnnotationsToolbar extends LinearLayout {
                     } else {
                         v.setSelected(true);
                     }
+                    mDoneBtn.setVisibility(VISIBLE);
+                }
+                else {
+                    restart();
                 }
                 mActionsListener.onItemSelected(v, v.isSelected());
             }

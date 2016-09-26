@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
+import android.util.Log;
 import android.view.View;
 
 import com.opentok.android.BaseVideoRenderer;
@@ -23,6 +24,25 @@ public class AnnotationsVideoRenderer extends BaseVideoRenderer {
 
     private GLSurfaceView mView;
     private MyRenderer mRenderer;
+
+    public int getDefaultWidth() {
+        return defaultWidth;
+    }
+
+    public void setDefaultWidth(int defaultWidth) {
+        this.defaultWidth = defaultWidth;
+    }
+
+    public int getDefaultHeight() {
+        return defaultHeight;
+    }
+
+    public void setDefaultHeight(int defaultHeight) {
+        this.defaultHeight = defaultHeight;
+    }
+
+    private int defaultWidth;
+    private int defaultHeight;
 
     static class MyRenderer implements GLSurfaceView.Renderer {
 
@@ -371,6 +391,7 @@ public class AnnotationsVideoRenderer extends BaseVideoRenderer {
         if ( mRenderer.mCurrentFrame != null ) {
             return mRenderer.mCurrentFrame.getWidth();
         }
+
         return 0;
     }
 

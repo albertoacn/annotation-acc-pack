@@ -9,3 +9,7 @@
 @interface OTAnnotationToolbarButton : UIButton
 
 @end
+
+@interface OTAnnotationToolbarDoneButton : UIButton
+
+@end

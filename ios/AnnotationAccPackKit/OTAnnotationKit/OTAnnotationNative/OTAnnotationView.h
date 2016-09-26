@@ -8,12 +8,31 @@
 #import <OTAnnotationKit/OTAnnotationDataManager.h>
 #import <OTAnnotationKit/OTAnnotationPath.h>
 
+@class OTAnnotationView;
+@protocol OTAnnotationViewDelegate <NSObject>
+
+- (void)annotationView:(OTAnnotationView *)annotationView
+            touchBegan:(UITouch *)touch
+             withEvent:(UIEvent *)event;
+
+- (void)annotationView:(OTAnnotationView *)annotationView
+            touchMoved:(UITouch *)touch
+             withEvent:(UIEvent *)event;
+
+- (void)annotationView:(OTAnnotationView *)annotationView
+            touchEnded:(UITouch *)touch
+             withEvent:(UIEvent *)event;
+
+@end
+
 @interface OTAnnotationView : UIView
 
 /**
  *  The associated annotation data manager.
  */
 @property (readonly, nonatomic) OTAnnotationDataManager *annotationDataManager;
+
+@property (weak, nonatomic) id<OTAnnotationViewDelegate> annotationViewDelegate;
 
 /**
  *  Initializes an annotataion view with the specified frame rectangle.
@@ -54,6 +73,6 @@
 /**
  *  Capture the current screen
  */
-- (UIImage *)captureScreen;
+- (UIImage *)captureScreenWithView:(UIView *)view;
 
 @end

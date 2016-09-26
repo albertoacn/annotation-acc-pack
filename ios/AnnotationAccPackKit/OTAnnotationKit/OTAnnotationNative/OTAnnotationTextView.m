@@ -5,7 +5,7 @@
 //
 
 #import "OTAnnotationTextView.h"
-#import <OTKAnalytics/OTKLogger.h>
+#import "AnnLoggingWrapper.h"
 
 #import "OTAnnotationTextView+Gesture.h"
 #import "OTAnnotationTextView_Gesture.h"
@@ -128,7 +128,7 @@ NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotation
     if (self = [super init]) {
         
         CGRect screenBounds = [UIScreen mainScreen].bounds;
-        self.frame = CGRectMake(LeadingPaddingOfAnnotationTextView, 180, CGRectGetWidth(screenBounds) - LeadingPaddingOfAnnotationTextView * 2, 0);
+        self.frame = CGRectMake(LeadingPaddingOfAnnotationTextView, 100, CGRectGetWidth(screenBounds) - LeadingPaddingOfAnnotationTextView * 2, 0);
         
         // attributes
         [self setClipsToBounds:NO];
@@ -196,7 +196,7 @@ NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotation
     self.cancelButton = nil;
     
     [self setUserInteractionEnabled:NO];
-    [OTKLogger logEventAction:KLogActionText variation:KLogVariationSuccess completion:nil];
+    [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionText variation:KLogVariationSuccess completion:nil];
 }
 
 - (void)resizeTextView {

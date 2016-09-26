@@ -29,6 +29,11 @@
           selectedColor:(UIColor *)selectedColor;
 @end
 
+typedef NS_ENUM(NSUInteger, OTAnnotationColorPickerViewOrientation) {
+    OTAnnotationColorPickerViewOrientationPortrait = 0,
+    OTAnnotationColorPickerViewOrientationLandscape
+};
+
 @interface OTAnnotationColorPickerView : UIView
 
 /**
@@ -44,6 +49,8 @@
  *  Getter to retrieve the selected color.
  */
 @property (readonly, nonatomic) UIColor *selectedColor;
+
+@property (nonatomic) OTAnnotationColorPickerViewOrientation annotationColorPickerViewOrientation;
 
 /**
  *  The object that acts as the delegate of the color picker view protocol.

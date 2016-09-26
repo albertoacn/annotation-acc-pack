@@ -1,145 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta http-equiv="Content-type" content="text/html; charset=utf-8">
-<title>OpenTok Screen Sharing Solution Annotation</title>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <script src="https://static.opentok.com/v2/js/opentok.min.js" type="text/javascript" defer></script>
+    <title>OpenTok Screen Sharing Solution Annotation</title>
 
-<script type="text/javascript" charset="utf-8">
+    <style type="text/css" media="screen">
+        body {
+            margin: 0;
+            background-color: rgba(0, 153, 203, 0.7);
+            box-sizing: border-box;
+            height: 100vh;
+        }
 
-  var opener;
-  var canvas;
+        canvas {
+            top: 0;
+            z-index: 1000;
+        }
 
-    if (!toolbar) {
-        alert("Something went wrong: You must pass an OpenTok annotation toolbar object into the window.")
-    } else {
-        opener = window.opener;
-        window.onbeforeunload = window.triggerCloseEvent;
-    }
+        .hidden {
+            display: none;
+        }
 
-    var createContainerElements = function () {
+        .main-wrap {
+            width: 100%;
+            height: 100%;
+            -ms-box-orient: horizontal;
+            display: -webkit-box;
+            display: -moz-box;
+            display: -ms-flexbox;
+            display: -moz-flex;
+            display: -webkit-flex;
+            display: flex;
+            -webkit-justify-content: center;
+            justify-content: center;
+            -webkit-align-items: center;
+            align-items: center;
+        }
 
-        var parentDiv = document.getElementById("annotationContainer");
-        var publisherContainer = document.createElement("div");
-        publisherContainer.setAttribute("id", "screenshare_publisher");
-        publisherContainer.classList.add("publisher-wrap");
-        parentDiv.appendChild(publisherContainer);
+        .inner-wrap {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+        }
 
-        return {
-            annotation: parentDiv,
-            publisher: publisherContainer
+        .fixed-container {
+            position: fixed;
+            top: 275px;
+            right: 0;
+            width: 40px;
+            z-index: 1001;
+        }
+
+        .fixed-container .toolbar-wrap {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .fixed-container .toolbar-wrap input {
+            display: block;
+            top: 0 !important;
+            transform: none !important;
+        }
+
+        .fixed-container .toolbar-wrap .OT_color {
+            width: 30px;
+            margin-right: 5px !important;
+            margin-left: 5px !important;
+            padding: 0;
+        }
+
+        .fixed-container .toolbar-wrap .OT_subpanel,
+        .fixed-container .toolbar-wrap .color-picker {
+            position: absolute;
+            top: 0;
+            right: 40px;
+            padding-left: 0 !important;
+            overflow: hidden;
+        }
+
+        .fixed-container .toolbar-wrap .OT_subpanel> div {
+            top: 0 !important;
+            transform: none !important;
+        }
+
+        .fixed-container .toolbar-wrap .color-picker {
+            left: -30px;
+        }
+
+        .fixed-container .toolbar-wrap .color-picker .color-choice {
+            display: block !important;
+            height: 20px !important;
+            width: 20px !important;
+        }
+
+        .publisherContainer {
+            display: block;
+            background-color: #000000;
+            position: absolute;
+        }
+
+        .publisher-wrap {
+            height: 100%;
+            width: 100%;
+        }
+
+        .subscriberContainer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 200px;
+            height: 120px;
+            background-color: #000000;
+            border: 2px solid white;
+            border-radius: 6px;
+        }
+
+        .subscriberContainer .OT_video-poster {
+            width: 100%;
+            height: 100%;
+            opacity: .25;
+            background-repeat: no-repeat;
+            background-image: url(https://static.opentok.com/webrtc/v2.8.2/images/rtc/audioonly-silhouette.svg);
+            background-size: 50%;
+            background-position: center;
+        }
+
+        .OT_video-element {
+            height: 100%;
+            width: 100%;
+        }
+
+        .OT_edge-bar-item {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-wrap">
+        <div id="annotationContainer" class="inner-wrap"></div>
+    </div>
+    <div id="toolbarContainer" class="fixed-container">
+        <div id="toolbar" class="toolbar-wrap"></div>
+    </div>
+    <div id="subscriberVideo" class="subscriberContainer hidden"></div>
+
+    <script type="text/javascript" charset="utf-8">
+        /** Must use double-quotes since everything must be converted to a string */
+        var opener;
+        var canvas;
+
+        if (!toolbar) {
+            alert("Something went wrong: You must pass an OpenTok annotation toolbar object into the window.")
+        } else {
+            opener = window.opener;
+            window.onbeforeunload = window.triggerCloseEvent;
+        }
+
+        var localScreenProperties = {
+            insertMode: "append",
+            width: "100%",
+            height: "100%",
+            videoSource: "window",
+            showControls: false,
+            style: {
+                buttonDisplayMode: "off"
+            },
+            subscribeToVideo: "true", 
+            subscribeToAudio: "false",
+            fitMode: "contain"
         };
 
-    };
+        var createContainerElements = function() {
 
-    if(navigator.userAgent.indexOf("Firefox") !== -1 ){
-      var ghost = window.open("about:blank");
-      ghost.focus();
-      ghost.close();
-    }
+            var parentDiv = document.getElementById("annotationContainer");
+            var publisherContainer = document.createElement("div");
+            publisherContainer.setAttribute("id", "screenshare_publisher");
+            publisherContainer.classList.add("publisher-wrap");
+            parentDiv.appendChild(publisherContainer);
 
-</script>
+            return {
+                annotation: parentDiv,
+                publisher: publisherContainer
+            };
 
-<style type="text/css" media="screen">
-    body {
-        margin: 0;
-        background-color: rgba(0, 153, 203, 0.7);
-        box-sizing: border-box;
-        height: 100vh;
-    }
+        };
 
-    canvas {
-      top: 0;
-      z-index: 1000;
-    }
+        var addSubscriberVideo = function(stream) {
+            var container = document.getElementById("subscriberVideo");
+            var subscriber = session.subscribe(stream, container, localScreenProperties, function(error) {
+                if (error) {
+                    console.log("Failed to add subscriber video", error);
+                }
+                container.classList.remove("hidden");
+            });
+        };
 
-    .main-wrap {
-      width: 100%;
-      height: 100%;
-      -ms-box-orient: horizontal;
-      display: -webkit-box;
-      display: -moz-box;
-      display: -ms-flexbox;
-      display: -moz-flex;
-      display: -webkit-flex;
-      display: flex;
-      -webkit-justify-content: center;
-      justify-content: center;
-      -webkit-align-items: center;
-      align-items: center;
-    }
-    .inner-wrap {
-      position: relative;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .fixed-container {
-      position: fixed;
-      top: 275px;
-      right: 0;
-      width: 40px;
-      z-index: 1001;
-    }
-    .fixed-container .toolbar-wrap {
-        position:absolute;
-        top:0;
-        left:0;
-    }
-    .fixed-container .toolbar-wrap input {
-      display: block;
-      top: 0 !important;
-      transform: none !important;
-    }
-    .fixed-container .toolbar-wrap .OT_color {
-      width: 30px;
-      margin-right: 5px !important;
-      margin-left: 5px !important;
-      padding: 0;
-    }
-    .fixed-container .toolbar-wrap .OT_subpanel,
-    .fixed-container .toolbar-wrap .color-picker {
-      position: absolute;
-      top: 0;
-      right: 40px;
-      padding-left: 0 !important;
-      overflow: hidden;
-    }
-    .fixed-container .toolbar-wrap .OT_subpanel > div {
-      top: 0 !important;
-      transform: none !important;
-    }
-    .fixed-container .toolbar-wrap .color-picker {
-      left: -30px;
-    }
-    .fixed-container .toolbar-wrap .color-picker .color-choice {
-      display: block !important;
-      height: 20px !important;
-      width: 20px !important;
-    }
-    .publisherContainer {
-        display: block;
-        background-color: #000000;
-        position: absolute;
-    }
-    .publisher-wrap {
-        height: 100%;
-        width: 100%;
-    }
-    .OT_video-element {
-        height: 100%;
-        width: 100%;
-    }
-    .OT_edge-bar-item {
-      display: none;
-    }
 
-</style>
-</head>
-<body>
-  <div class="main-wrap">
-    <div id="annotationContainer" class="inner-wrap"></div>
-  </div>
-  <div id="toolbarContainer" class="fixed-container">
-      <div id="toolbar" class="toolbar-wrap"></div>
-  </div>
+        if (navigator.userAgent.indexOf("Firefox") !== -1) {
+            var ghost = window.open("about:blank");
+            ghost.focus();
+            ghost.close();
+        }
+    </script>
 </body>
+
 </html>

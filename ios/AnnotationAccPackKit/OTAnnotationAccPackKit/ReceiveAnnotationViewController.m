@@ -1,16 +1,16 @@
 //
 //  ReceiveAnnotationViewController.m
-//  OTAnnotationAccPackKit
 //
-//  Created by Xi Huang on 7/26/16.
 //  Copyright © 2016 Tokbox, Inc. All rights reserved.
 //
 
 #import "ReceiveAnnotationViewController.h"
 #import <OTAnnotationKit/OTAnnotationKit.h>
+#import <OTScreenShareKit/OTScreenShareKit.h>
 
-@interface ReceiveAnnotationViewController () <AnnotationDelegate>
+@interface ReceiveAnnotationViewController ()
 @property (nonatomic) OTAnnotator *annotator;
+@property (nonatomic) OTScreenSharer *sharer;
 @end
 
 @implementation ReceiveAnnotationViewController
@@ -18,17 +18,44 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.annotator = [OTAnnotator annotator];
-    self.annotator.delegate = self;
-    [self.annotator connectForReceivingAnnotation];
+    self.title = @"Receive Annotation";
+    self.navigationController.interactivePopGestureRecognizer.enabled = NO;
 }
 
-- (void)annotationWithSignal:(OTAnnotationSignal)signal
-                       error:(NSError *)error {
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
     
-    if (signal == OTAnnotationSessionDidConnect){
-        [self.view addSubview:self.annotator.annotationView];
-    }
+    self.sharer = [OTScreenSharer sharedInstance];
+    [self.sharer connectWithView:self.view
+                         handler:^(OTScreenShareSignal signal, NSError *error) {
+                             
+                             if (!error) {
+                                 
+                                 if (signal == OTScreenShareSignalSessionDidConnect) {
+                                     self.sharer.publishAudio = NO;
+                                     self.sharer.subscribeToAudio = NO;
+                                 }
+                                 else if (signal == OTScreenShareSignalSubscriberConnect) {
+                                     self.annotator = [[OTAnnotator alloc] init];
+                                     [self.annotator connectForReceivingAnnotationWithSize:self.view.bounds.size completionHandler:^(OTAnnotationSignal signal, NSError *error) {
+                                         if (signal == OTAnnotationSessionDidConnect){
+                                             self.annotator.annotationScrollView.frame = self.view.bounds;
+                                             self.annotator.annotationScrollView.scrollView.contentSize = self.view.bounds.size;
+                                             [self.view addSubview:self.annotator.annotationScrollView];
+                                         }
+                                     }];
+                                 }
+                             }
+                         }];
 }
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    [self.annotator disconnect];
+    self.annotator = nil;
+    [self.sharer disconnect];
+    self.sharer = nil;
+}
+
 
 @end

@@ -61,10 +61,9 @@
   //--------------------------------------
   //  OPENTOK ANNOTATION CANVAS/VIEW
   //--------------------------------------
-
+  var DEFAULT_ASSET_URL = 'https://assets.tokbox.com/solutions/images/';
 
   OTSolution = this.OTSolution || {};
-  console.log('ello');
 
   OTSolution.Annotations = function (options) {
 
@@ -72,10 +71,11 @@
     this.widgetVersion = 'js-1.0.0-beta';
     this.parent = options.container;
     this.videoFeed = options.feed;
+    this.imageAssets = options.imageAssets || DEFAULT_ASSET_URL;
 
     _OTKAnalytics = _OTKAnalytics || options.OTKAnalytics;
     if (!_otkanalytics) {
-      _logAnalytics()
+      _logAnalytics();
     }
 
 
@@ -156,7 +156,7 @@
      */
     this.selectItem = function (item) {
       if (self.overlay) {
-        self.overlay.style.display = 'none';
+        self.parent.removeChild(self.overlay);
         self.overlay = null;
       }
 
@@ -165,11 +165,13 @@
 
         if (!self.overlay) {
           self.overlay = document.createElement('div');
+          self.overlay.id = 'captureOverlay';
           self.overlay.style.position = 'absolute';
           self.overlay.style.top = '0px';
           self.overlay.style.width = self.parent.clientWidth + 'px';
           self.overlay.style.height = self.parent.clientHeight + 'px';
-          self.overlay.style.background = 'rgba(0,0,0,0.4) url("https://assets.tokbox.com/solutions/images/annotation-camera.png") no-repeat center';
+          self.overlay.style.background = 'rgba(0,0,0,0.4) url("' +
+            self.imageAssets +'annotation-camera.png") no-repeat center';
           self.overlay.style.backgroundSize = '50px 50px';
           self.overlay.style.cursor = 'pointer';
           self.overlay.style.opacity = 0;
@@ -187,8 +189,10 @@
 
           self.overlay.onclick = function () {
             self.captureScreenshot();
-            self.overlay.style.display = 'none';
+            self.parent.removeChild(self.overlay);
             self.overlay = null;
+            self.parent.onmouseover = null;
+            self.parent.onmouseout = null;
           };
         } else {
           self.overlay.style = 'inline';
@@ -253,9 +257,6 @@
           width = width * scale;
         }
 
-        // If stretched to fill, we need an offset to center the image
-        offsetX = (width - canvas.width) / 2;
-        offsetY = (height - canvas.height) / 2;
       } else {
         if (width > height) {
           scale = canvas.width / width;
@@ -267,6 +268,10 @@
           width = width * scale;
         }
       }
+
+      // If stretched to fill, we need an offset to center the image
+      offsetX = (width - canvas.width) / 2;
+      offsetY = (height - canvas.height) / 2;
 
       // Combine the video and annotation images
       var image = new Image();
@@ -1132,7 +1137,7 @@
     this.buttonHeight = options.buttonHeight || '40px';
     this.iconWidth = options.iconWidth || '30px';
     this.iconHeight = options.iconHeight || '30px';
-    var imageAssets = 'https://assets.tokbox.com/solutions/images/';
+    var imageAssets = options.imageAssets || DEFAULT_ASSET_URL;
 
     var toolbarItems = [{
       id: 'OT_pen',

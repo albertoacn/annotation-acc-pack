@@ -8,8 +8,8 @@
 #import "OTAnnotationScrollView.h"
 #import "OTAnnotationScrollView_Private.h"
 
-@interface OTFullScreenAnnotationViewController ()
-@property (nonatomic) OTAnnotationScrollView *annotationView;
+@interface OTFullScreenAnnotationViewController () <OTAnnotationToolbarViewDataSource>
+
 @end
 
 @implementation OTFullScreenAnnotationViewController
@@ -18,24 +18,27 @@
     
     if (self = [super init]) {
         
-        _annotationView = [[OTAnnotationScrollView alloc] initWithFrame:CGRectZero];
-        [_annotationView initializeToolbarView];
-        CGFloat height = _annotationView.toolbarView.bounds.size.height;
+        OTAnnotationScrollView *annotationScrollView = [[OTAnnotationScrollView alloc] init];
+        annotationScrollView.frame = CGRectMake(0, 0, CGRectGetWidth([UIScreen mainScreen].bounds), CGRectGetHeight([UIScreen mainScreen].bounds) - 50);
+        annotationScrollView.scrollView.contentSize = CGSizeMake(CGRectGetWidth([UIScreen mainScreen].bounds), CGRectGetHeight([UIScreen mainScreen].bounds) - 50);
         
-        _annotationView.frame = CGRectMake(0,
-                                           0,
-                                           CGRectGetWidth([UIScreen mainScreen].bounds),
-                                           CGRectGetHeight([UIScreen mainScreen].bounds) - height);
-        _annotationView.toolbarView.frame =  CGRectMake(0, CGRectGetHeight([UIScreen mainScreen].bounds) - height, _annotationView.toolbarView.bounds.size.width, height);
+        [annotationScrollView initializeToolbarView];
+        annotationScrollView.toolbarView.frame = CGRectMake(0, CGRectGetHeight([UIScreen mainScreen].bounds) - 50, CGRectGetWidth([UIScreen mainScreen].bounds), 50);
+        annotationScrollView.toolbarView.toolbarViewDataSource = self;
         
-        [self.view addSubview:_annotationView];
-        [self.view addSubview:_annotationView.toolbarView];
+        [self.view addSubview:annotationScrollView];
+        [self.view addSubview:annotationScrollView.toolbarView];
         
         self.providesPresentationContextTransitionStyle = YES;
         self.definesPresentationContext = YES;
         self.modalPresentationStyle = UIModalPresentationOverCurrentContext;
     }
     return self;
+}
+
+#pragma mark - OTAnnotationToolbarViewDataSource
+- (UIView *)annotationToolbarViewForRootViewForScreenShot:(OTAnnotationToolbarView *)toolbarView {
+    return [UIApplication sharedApplication].keyWindow.rootViewController.view;
 }
 
 @end

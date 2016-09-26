@@ -8,10 +8,12 @@ import UIKit
 
 class AnnotationOnScreenViewController: UIViewController {
     private let annotationOverContentViewController = OTFullScreenAnnotationViewController()
+    @IBOutlet weak var holderView: UIView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        self.navigationController?.navigationBar.translucent = false
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Annotate", style: .Plain, target: self, action: #selector(AnnotationOnScreenViewController.startAnnotation))
         
         let statusButton = UIButton(frame: CGRectMake(0, 0, CGRectGetWidth(UIScreen.mainScreen().bounds), 20))
@@ -23,9 +25,8 @@ class AnnotationOnScreenViewController: UIViewController {
     }
     
     @IBAction func viewPressed(sender: UIView!) {
-        self.view.bringSubviewToFront(sender)
+        holderView.bringSubviewToFront(sender)
     }
-    
     
     func startAnnotation() {
         

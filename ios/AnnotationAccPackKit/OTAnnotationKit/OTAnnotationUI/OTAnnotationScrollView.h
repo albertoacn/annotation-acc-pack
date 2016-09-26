@@ -19,23 +19,18 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, getter = isAnnotatable) BOOL annotatable;
 
 /**
- *  A boolean value to indicate whether the annotation scroll view is zoomable.
- */
-@property (nonatomic, getter = isZoomEnabled) BOOL zoomEnabled;
-
-/**
  *  The associated annotation view.
  */
 @property (readonly, nonatomic) OTAnnotationView *annotationView;
 
+@property (readonly, nonatomic) UIScrollView *scrollView;
+
 /**
- *  Initializes an annotataion scroll view with the specified frame rectangle.
- *
- *  @param frame The frame rectangle for the view, measured in points.
+ *  Initializes an annotataion scroll view.
  *
  *  @return A new OTAnnotationScrollView object.
  */
-- (instancetype)initWithFrame:(CGRect)frame;
+- (instancetype)init;
 
 /**
  *  Add the annotatable content with a given view. 

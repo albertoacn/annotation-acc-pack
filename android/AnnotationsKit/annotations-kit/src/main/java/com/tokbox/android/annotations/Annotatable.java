@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public class Annotatable {
 
-    private String mode;
+    private AnnotationsView.Mode mode;
     private String data;
 
     private String cid;
@@ -30,7 +30,19 @@ public class Annotatable {
         TEXT
     }
 
-    public Annotatable(String mode, AnnotationsPath path, Paint paint, int canvasWidth, int canvasHeight, String cid) {
+    public Annotatable(AnnotationsView.Mode mode, AnnotationsPath path, Paint paint, int canvasWidth, int canvasHeight, String cid) throws Exception{
+        if ( cid == null || paint == null || path == null || mode == null || cid.isEmpty() ) {
+            throw  new Exception ("Parameters (cid, paint, path or mode) cannot be null.");
+        }
+
+        if (canvasHeight >= Integer.MAX_VALUE || canvasWidth >= Integer.MAX_VALUE ){
+            throw  new Exception ("CanvasWidth and CanvasHeight values cannot be higher than Integer.MAX_VALUE");
+        }
+
+        if (canvasHeight < 0 || canvasWidth < 0 ){
+            throw  new Exception ("CanvasWidth and CanvasHeight values cannot be lower than 0");
+        }
+
         this.cid = cid;
         this.mode = mode;
         this.path = path;
@@ -39,7 +51,19 @@ public class Annotatable {
         this.paint = paint;
     }
 
-    public Annotatable(String mode, AnnotationsText text, Paint paint, int canvasWidth, int canvasHeight, String cid) {
+    public Annotatable(AnnotationsView.Mode mode, AnnotationsText text, Paint paint, int canvasWidth, int canvasHeight, String cid) throws Exception {
+        if ( cid == null || paint == null || text == null || mode == null || cid.isEmpty() ) {
+            throw  new Exception ("Parameters (cid, paint, text or mode) cannot be null.");
+        }
+
+        if (canvasHeight >= Integer.MAX_VALUE || canvasWidth >= Integer.MAX_VALUE ){
+            throw  new Exception ("CanvasWidth and CanvasHeight values cannot be higher than Integer.MAX_VALUE");
+        }
+
+        if (canvasHeight < 0 || canvasWidth < 0 ){
+            throw  new Exception ("CanvasWidth and CanvasHeight values cannot be lower than 0");
+        }
+
         this.cid = cid;
         this.mode = mode;
         this.text = text;
@@ -48,14 +72,21 @@ public class Annotatable {
         this.paint = paint;
     }
 
-    public void setMode(String mode){
+    public void setMode(AnnotationsView.Mode mode) throws Exception{
+
+        if (mode == null ) {
+            throw  new Exception ("Mode cannot be null.");
+        }
         this.mode = mode;
     }
-    public void setData(String data){
+    public void setData(String data) throws Exception{
+        if (data == null ) {
+            throw  new Exception ("Data cannot be null.");
+        }
         this.data = data;
     }
 
-    public String getMode() {
+    public AnnotationsView.Mode getMode() {
         return mode;
     }
 

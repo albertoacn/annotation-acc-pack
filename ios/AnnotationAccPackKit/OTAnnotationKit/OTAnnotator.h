@@ -5,7 +5,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <OTAnnotationKit/OTAnnotationView.h>
+#import <OTAnnotationKit/OTAnnotationScrollView.h>
 
 typedef NS_ENUM(NSUInteger, OTAnnotationSignal) {
     OTAnnotationSessionDidConnect = 0,
@@ -32,24 +32,26 @@ typedef void (^OTAnnotationBlock)(OTAnnotationSignal signal, NSError *error);
  */
 @property (readonly, nonatomic, getter=isSendAnnotationEnabled) BOOL sendAnnotationEnabled;
 
-+ (instancetype)annotator;
+- (instancetype)init;
 
 + (void)setOpenTokApiKey:(NSString *)apiKey
                sessionId:(NSString *)sessionId
                    token:(NSString *)token;
 
-- (void)connectForReceivingAnnotation;
+- (NSError *)connectForReceivingAnnotationWithSize:(CGSize)size;
 
-- (void)connectForSendingAnnotation;
+- (NSError *)connectForSendingAnnotationWithSize:(CGSize)size;
 
-- (void)connectForReceivingAnnotationWithHandler:(OTAnnotationBlock)handler;
+- (void)connectForReceivingAnnotationWithSize:(CGSize)size
+                            completionHandler:(OTAnnotationBlock)handler;
 
-- (void)connectForSendingAnnotationWithHandler:(OTAnnotationBlock)handler;
+- (void)connectForSendingAnnotationWithSize:(CGSize)size
+                          completionHandler:(OTAnnotationBlock)handler;
 
-- (void)disconnect;
+- (NSError *)disconnect;
 
 @property (weak, nonatomic) id<AnnotationDelegate> delegate;
 
-@property (readonly, nonatomic) OTAnnotationView *annotationView;
+@property (readonly, nonatomic) OTAnnotationScrollView *annotationScrollView;
 
 @end
