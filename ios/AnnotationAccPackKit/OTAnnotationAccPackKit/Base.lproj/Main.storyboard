@@ -157,6 +157,26 @@
                                             <segue destination="jNc-xy-E7H" kind="show" id="OAe-gB-lzv"/>
                                         </connections>
                                     </tableViewCell>
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" textLabel="6Fm-Jd-8IC" style="IBUITableViewCellStyleDefault" id="nKm-NG-mpq">
+                                        <rect key="frame" x="0.0" y="372" width="600" height="44"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                        <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="nKm-NG-mpq" id="zgN-qe-fPN">
+                                            <rect key="frame" x="0.0" y="0.0" width="600" height="43.5"/>
+                                            <autoresizingMask key="autoresizingMask"/>
+                                            <subviews>
+                                                <label opaque="NO" multipleTouchEnabled="YES" contentMode="left" text="Receive annotation on partial canvas" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" id="6Fm-Jd-8IC">
+                                                    <rect key="frame" x="15" y="0.0" width="570" height="43.5"/>
+                                                    <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                                                    <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
+                                                    <nil key="highlightedColor"/>
+                                                </label>
+                                            </subviews>
+                                        </tableViewCellContentView>
+                                        <connections>
+                                            <segue destination="8Uk-hJ-FyN" kind="show" id="zgX-VF-duQ"/>
+                                        </connections>
+                                    </tableViewCell>
                                 </cells>
                             </tableViewSection>
                         </sections>
@@ -170,6 +190,39 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="qIe-7i-gox" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="-552" y="353"/>
+        </scene>
+        <!--Receive Annotation On Partial View Controller-->
+        <scene sceneID="iTB-Mo-qHE">
+            <objects>
+                <viewController id="8Uk-hJ-FyN" customClass="ReceiveAnnotationOnPartialViewController" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="5hX-2C-WWZ"/>
+                        <viewControllerLayoutGuide type="bottom" id="pci-pB-4JE"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="REK-aL-Fl7">
+                        <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="i1b-Tk-Lqb">
+                                <rect key="frame" x="120" y="120" width="360" height="360"/>
+                                <color key="backgroundColor" red="1" green="1" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
+                            </view>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="i1b-Tk-Lqb" firstAttribute="centerX" secondItem="REK-aL-Fl7" secondAttribute="centerX" id="ZWe-qw-YR9"/>
+                            <constraint firstItem="i1b-Tk-Lqb" firstAttribute="width" secondItem="REK-aL-Fl7" secondAttribute="width" multiplier="0.6" id="hhG-yA-tFx"/>
+                            <constraint firstItem="i1b-Tk-Lqb" firstAttribute="height" secondItem="REK-aL-Fl7" secondAttribute="height" multiplier="0.6" id="pMY-OV-j3X"/>
+                            <constraint firstItem="i1b-Tk-Lqb" firstAttribute="centerY" secondItem="REK-aL-Fl7" secondAttribute="centerY" id="wmR-p3-K2I"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="yellowView" destination="i1b-Tk-Lqb" id="9Pr-Jk-hB7"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="bk0-8a-Mv8" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-1189" y="1145"/>
         </scene>
         <!--Annotation Blank Canvas View Controller-->
         <scene sceneID="ZtL-S5-q6c">

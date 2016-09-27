@@ -1,24 +1,28 @@
 //
-//  ReceiveAnnotationViewController.m
+//  ReceiveAnnotationOnPartialViewController.m
+//  OTAnnotationAccPackKit
 //
+//  Created by Xi Huang on 9/21/16.
 //  Copyright © 2016 Tokbox, Inc. All rights reserved.
 //
 
-#import "ReceiveAnnotationViewController.h"
+#import "ReceiveAnnotationOnPartialViewController.h"
 #import <OTAnnotationKit/OTAnnotationKit.h>
 #import <OTScreenShareKit/OTScreenShareKit.h>
 
-@interface ReceiveAnnotationViewController ()
+@interface ReceiveAnnotationOnPartialViewController()
+@property (weak, nonatomic) IBOutlet UIView *yellowView;
 @property (nonatomic) OTAnnotator *annotator;
 @property (nonatomic) OTScreenSharer *sharer;
 @end
 
-@implementation ReceiveAnnotationViewController
+@implementation ReceiveAnnotationOnPartialViewController
+
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.title = @"Receive Annotation";
+    self.title = @"Receive annotation on partial canvas";
     self.navigationController.interactivePopGestureRecognizer.enabled = NO;
 }
 
@@ -26,7 +30,7 @@
     [super viewDidAppear:animated];
     
     self.sharer = [OTScreenSharer sharedInstance];
-    [self.sharer connectWithView:self.view
+    [self.sharer connectWithView:self.yellowView
                          handler:^(OTScreenShareSignal signal, NSError *error) {
                              
                              if (!error) {
@@ -34,13 +38,12 @@
                                  if (signal == OTScreenShareSignalSessionDidConnect) {
                                      self.sharer.publishAudio = NO;
                                      self.sharer.subscribeToAudio = NO;
-                                     
                                      self.annotator = [[OTAnnotator alloc] init];
-                                     [self.annotator connectForReceivingAnnotationWithSize:self.view.bounds.size completionHandler:^(OTAnnotationSignal signal, NSError *error) {
+                                     [self.annotator connectForReceivingAnnotationWithSize:self.yellowView.bounds.size completionHandler:^(OTAnnotationSignal signal, NSError *error) {
                                          if (signal == OTAnnotationSessionDidConnect){
-                                             self.annotator.annotationScrollView.frame = self.view.bounds;
-                                             self.annotator.annotationScrollView.scrollView.contentSize = self.view.bounds.size;
-                                             [self.view addSubview:self.annotator.annotationScrollView];
+                                             self.annotator.annotationScrollView.frame = self.yellowView.bounds;
+                                             self.annotator.annotationScrollView.scrollView.contentSize = self.yellowView.bounds.size;
+                                             [self.yellowView addSubview:self.annotator.annotationScrollView];
                                          }
                                      }];
                                  }
@@ -55,6 +58,5 @@
     [self.sharer disconnect];
     self.sharer = nil;
 }
-
 
 @end

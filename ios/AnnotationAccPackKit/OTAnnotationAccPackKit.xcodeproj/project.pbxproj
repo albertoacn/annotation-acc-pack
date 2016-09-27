@@ -103,6 +103,7 @@
 		A0B63ED01D481AF200123B51 /* AnnotationImportedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B63ECF1D481AF200123B51 /* AnnotationImportedViewController.swift */; };
 		A0B63ED21D481D2200123B51 /* AnnotationOnScreenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B63ED11D481D2200123B51 /* AnnotationOnScreenViewController.swift */; };
 		A0B63ED41D48207E00123B51 /* AnnotationManualViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B63ED31D48207E00123B51 /* AnnotationManualViewController.swift */; };
+		A0C0DC4F1D932F6D00978934 /* ReceiveAnnotationOnPartialViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = A0C0DC4D1D932C7600978934 /* ReceiveAnnotationOnPartialViewController.m */; };
 		A0D8947C1D50040800863A14 /* OTAnnotationTextView+Gesture.h in Headers */ = {isa = PBXBuildFile; fileRef = A0D8947A1D50040800863A14 /* OTAnnotationTextView+Gesture.h */; };
 		A0D8947D1D50040800863A14 /* OTAnnotationTextView+Gesture.m in Sources */ = {isa = PBXBuildFile; fileRef = A0D8947B1D50040800863A14 /* OTAnnotationTextView+Gesture.m */; };
 		A0D8947F1D50043100863A14 /* OTAnnotationTextView_Gesture.h in Headers */ = {isa = PBXBuildFile; fileRef = A0D8947E1D50043100863A14 /* OTAnnotationTextView_Gesture.h */; };
@@ -274,6 +275,8 @@
 		A0B63ECF1D481AF200123B51 /* AnnotationImportedViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnnotationImportedViewController.swift; sourceTree = "<group>"; };
 		A0B63ED11D481D2200123B51 /* AnnotationOnScreenViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnnotationOnScreenViewController.swift; sourceTree = "<group>"; };
 		A0B63ED31D48207E00123B51 /* AnnotationManualViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnnotationManualViewController.swift; sourceTree = "<group>"; };
+		A0C0DC4C1D932C7600978934 /* ReceiveAnnotationOnPartialViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ReceiveAnnotationOnPartialViewController.h; sourceTree = "<group>"; };
+		A0C0DC4D1D932C7600978934 /* ReceiveAnnotationOnPartialViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ReceiveAnnotationOnPartialViewController.m; sourceTree = "<group>"; };
 		A0D8947A1D50040800863A14 /* OTAnnotationTextView+Gesture.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "OTAnnotationTextView+Gesture.h"; sourceTree = "<group>"; };
 		A0D8947B1D50040800863A14 /* OTAnnotationTextView+Gesture.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "OTAnnotationTextView+Gesture.m"; sourceTree = "<group>"; };
 		A0D8947E1D50043100863A14 /* OTAnnotationTextView_Gesture.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OTAnnotationTextView_Gesture.h; sourceTree = "<group>"; };
@@ -471,6 +474,8 @@
 				A06E8BD11D88C5290048BD11 /* SendAnnotationFillViewController.m */,
 				A0B63ECB1D481ACE00123B51 /* ReceiveAnnotationViewController.h */,
 				A0B63ECC1D481ACE00123B51 /* ReceiveAnnotationViewController.m */,
+				A0C0DC4C1D932C7600978934 /* ReceiveAnnotationOnPartialViewController.h */,
+				A0C0DC4D1D932C7600978934 /* ReceiveAnnotationOnPartialViewController.m */,
 				A0AB57FF1D2C49E700F8410B /* AppDelegate.h */,
 				A0AB58001D2C49E700F8410B /* AppDelegate.m */,
 				A0AB58011D2C49E700F8410B /* Assets.xcassets */,
@@ -860,6 +865,7 @@
 				A06E8BD21D88C5290048BD11 /* SendAnnotationFillViewController.m in Sources */,
 				A0AB580A1D2C49E700F8410B /* AppDelegate.m in Sources */,
 				A0B63ED01D481AF200123B51 /* AnnotationImportedViewController.swift in Sources */,
+				A0C0DC4F1D932F6D00978934 /* ReceiveAnnotationOnPartialViewController.m in Sources */,
 				A0B63ED41D48207E00123B51 /* AnnotationManualViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

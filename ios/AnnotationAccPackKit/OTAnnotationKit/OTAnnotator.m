@@ -145,7 +145,7 @@ receivedSignalType:(NSString*)type
  fromConnection:(OTConnection*)connection
      withString:(NSString*)string {
     
-    if (![type isEqualToString:@"otAnnotation_pen"]) return;
+    if (![type containsString:@"otAnnotation_pen"]) return;
 
     if (self.receiveAnnotationEnabled &&
         self.session.sessionConnectionStatus == OTSessionConnectionStatusConnected &&
@@ -155,22 +155,23 @@ receivedSignalType:(NSString*)type
         if (jsonArray.count == 0) return;
         
         // set path attributes
-        UIColor *drawingColor = [UIColor colorFromHexString:[jsonArray firstObject][@"color"]];
-        self.annotationScrollView.annotationView.currentAnnotatable = [OTAnnotationPath pathWithStrokeColor:drawingColor];
-        OTAnnotationPath *currentPath = (OTAnnotationPath *)self.annotationScrollView.annotationView.currentAnnotatable;
-        
-        CGFloat lineWidth = [[jsonArray firstObject][@"lineWidth"] floatValue];
-        currentPath.lineWidth = lineWidth;
+        if ([jsonArray firstObject][@"color"] && [jsonArray firstObject][@"lineWidth"]) {
+            UIColor *drawingColor = [UIColor colorFromHexString:[jsonArray firstObject][@"color"]];
+            self.annotationScrollView.annotationView.currentAnnotatable = [OTAnnotationPath pathWithStrokeColor:drawingColor];
+            OTAnnotationPath *currentPath = (OTAnnotationPath *)self.annotationScrollView.annotationView.currentAnnotatable;
+            
+            CGFloat lineWidth = [[jsonArray firstObject][@"lineWidth"] floatValue];
+            currentPath.lineWidth = lineWidth;
+        }
+        else {
+            self.annotationScrollView.annotationView.currentAnnotatable = [OTAnnotationPath pathWithStrokeColor:nil];
+        }
         
         // calculate drawing position
         for (NSDictionary *json in jsonArray) {
-                
-            if (!self.annotationScrollView.annotationView.currentAnnotatable) {
-                self.annotationScrollView.annotationView.currentAnnotatable = [OTAnnotationPath pathWithStrokeColor:nil];
-            }
             
             // this is the unique property from web
-            if (json[@"selectedItem"]) {
+            if (![type containsString:@"ios_"]) {
                 [self drawOnFitModeWithJson:json path:(OTAnnotationPath *)self.annotationScrollView.annotationView.currentAnnotatable];
                 continue;
             }
@@ -328,7 +329,7 @@ receivedSignalType:(NSString*)type
     
     NSError *error;
     NSString *jsonString = [JSON stringify:signalingPoints];
-    [[OTAcceleratorSession getAcceleratorPackSession] signalWithType:@"otAnnotation_pen" string:jsonString connection:latestScreenShareStream.connection error:&error];
+    [[OTAcceleratorSession getAcceleratorPackSession] signalWithType:@"ios_otAnnotation_pen" string:jsonString connection:latestScreenShareStream.connection error:&error];
     if (error) {
         NSLog(@"%@", error);
     }

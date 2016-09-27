@@ -110,6 +110,7 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
     private Context mContext;
 
     private ViewGroup mContentView;
+    private String mType;
 
     /**
      * Monitors state changes in the Annotations component.
@@ -912,7 +913,6 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
                 jsonObject.put("id", mRemote.getStream().getConnection().getConnectionId());
             }
             else {
-
                 if ( mLocal != null && mLocal.getStream() != null ) {
                     jsonObject.put("id", mLocal.getStream().getConnection().getConnectionId());
                 }
@@ -958,7 +958,6 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
                 jsonObject.put("id", mRemote.getStream().getConnection().getConnectionId());
             }
             else {
-
                 if ( mLocal != null && mLocal.getStream() != null ) {
                     jsonObject.put("id", mLocal.getStream().getConnection().getConnectionId());
                 }
@@ -990,12 +989,11 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
 
     @Override
     public void onSignalReceived(Session session, String type, String data, Connection connection) {
-
+        mType = type;
         String mycid = session.getConnection().getConnectionId();
         String cid = connection.getConnectionId();
 
         if (!cid.equals(mycid)) { // Ensure that we only handle signals from other users on the current canvas
-
             if (type.contains(SIGNAL_TYPE)) {
                 this.setVisibility(VISIBLE);
                 if (!loaded){
@@ -1072,8 +1070,7 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
                     }
 
                     if (initialPoint) {
-                        mCurrentColor = Color.parseColor(((String) json.get("color")).toLowerCase());
-                        mLineWidth = ((Number) json.get("lineWidth")).floatValue();
+
                         isStartPoint = true;
                     } else {
                         // If the start point flag was already set, we received the next point in the sequence
@@ -1082,8 +1079,12 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
                             isStartPoint = false;
                         }
                     }
-                } else {
+                }
+                if (!json.isNull("color")) {
                     mCurrentColor = Color.parseColor(((String) json.get("color")).toLowerCase());
+                }
+                if (!json.isNull("lineWidth")){
+                    mLineWidth = ((Number) json.get("lineWidth")).floatValue();
                 }
 
                 float scale = 1;
@@ -1108,7 +1109,6 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
                 Map<String, Float> iCanvas = new HashMap<>();
                 iCanvas.put("width", ((Number) json.get("canvasWidth")).floatValue());
                 iCanvas.put("height", ((Number) json.get("canvasHeight")).floatValue());
-
 
                 float canvasRatio = canvas.get("width") / canvas.get("height");
 
@@ -1212,6 +1212,13 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
                     }
                 }
 
+                if (mType.contains("ios") && (i == updates.length()-1)){
+                    try {
+                        addAnnotatable(connection.getConnectionId());
+                    } catch (Exception e) {
+                        Log.e(LOG_TAG, e.toString());
+                    }
+                }
                 invalidate(); // Need this to finalize the drawing on the screen
             }
 
@@ -1238,8 +1245,9 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
                     mSignalMirrored = (boolean) json.get("mirrored");
                 }
 
-                //get color
-                mCurrentColor = Color.parseColor(((String) json.get("color")).toLowerCase());
+                if (!json.isNull("color")) {
+                    mCurrentColor = Color.parseColor(((String) json.get("color")).toLowerCase());
+                }
 
                 //get text
                 String text = ((String) json.get("text"));
@@ -1337,7 +1345,6 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
                     editText.setTextSize(mTextSize);
 
                     createTextAnnotatable(editText, textX, textY);
-
                     mAnnotationsActive = true;
 
                 }
