@@ -1,12 +1,9 @@
 package com.tokbox.android.annotations.test;
 
 
-import com.opentok.android.Connection;
+
 import com.opentok.android.Publisher;
-import com.opentok.android.Stream;
 import com.opentok.android.Subscriber;
-import com.opentok.impl.ConnectionImpl;
-import com.opentok.impl.StreamImpl;
 import com.tokbox.android.accpack.AccPackSession;
 import com.tokbox.android.annotations.AnnotationsToolbar;
 import com.tokbox.android.annotations.AnnotationsView;
@@ -29,13 +26,20 @@ public class AnnotationsViewTest extends TestBase {
 
     public void testNewAnnotationsView() throws Exception {
         boolean isScreensharing = true;
-        session.setSessionListener(sessionListener);
-        session.connect(token);
 
-        waitSessionConnected();
+        try{
+            session = new AccPackSession(context, apiKey, sessionId);
+            session.setSessionListener(sessionListener);
+            session.connect(token);
 
-        AnnotationsView annotationsView = new AnnotationsView(mContext, session, apiKey, isScreensharing);
-        Assert.assertNotNull(annotationsView);
+            waitSessionConnected();
+
+            AnnotationsView annotationsView = new AnnotationsView(mContext, session, apiKey, isScreensharing);
+            Assert.assertNotNull(annotationsView);
+        } finally {
+            session.disconnect();
+            waitSessionDisconnected();
+        }
     }
 
     public void testNewAnnotationsViewWithSessionNull() {
@@ -45,8 +49,8 @@ public class AnnotationsViewTest extends TestBase {
         try {
             annotationsView = new AnnotationsView(mContext, null, apiKey, isScreensharing);
             Assert.fail("Should have thrown an exception with null AccPackSession.");
-        }
-        catch(Exception e){
+
+        } catch (Exception e) {
             Assert.assertNull(annotationsView);
         }
     }
@@ -54,18 +58,24 @@ public class AnnotationsViewTest extends TestBase {
     public void testNewAnnotationsViewPublisher() throws Exception {
         boolean isScreensharing = true;
 
-        session.setSessionListener(sessionListener);
-        session.connect(token);
+        try{
+            session = new AccPackSession(context, apiKey, sessionId);
+            session.setSessionListener(sessionListener);
+            session.connect(token);
 
-        waitSessionConnected();
+            waitSessionConnected();
 
-        Publisher publisher = new Publisher(context);
+            Publisher publisher = new Publisher(context);
 
-        AnnotationsView annotationsView = new AnnotationsView(mContext, session, apiKey, isScreensharing, publisher);
-        Assert.assertNotNull(annotationsView);
+            AnnotationsView annotationsView = new AnnotationsView(mContext, session, apiKey, isScreensharing, publisher);
+            Assert.assertNotNull(annotationsView);
+        } finally {
+            session.disconnect();
+            waitSessionDisconnected();
+        }
     }
 
-    public void testNewAnnotationsViewPublisherWithSessionNull() {
+    public void testNewAnnotationsViewPublisherWithSessionNull() throws Exception{
         boolean isScreensharing = true;
 
         AnnotationsView annotationsView = null;
@@ -80,77 +90,101 @@ public class AnnotationsViewTest extends TestBase {
         }
     }
 
-    public void testNewAnnotationsViewPublisherWithPublisherNull() {
+    public void testNewAnnotationsViewPublisherWithPublisherNull() throws Exception{
         boolean isScreensharing = true;
-
-        session.setSessionListener(sessionListener);
-        session.connect(token);
-
         AnnotationsView annotationsView = null;
 
         try {
+            session = new AccPackSession(context, apiKey, sessionId);
+            session.setSessionListener(sessionListener);
+            session.connect(token);
             waitSessionConnected();
             annotationsView = new AnnotationsView(mContext, session, apiKey, isScreensharing, null);
             Assert.fail("Should have thrown an exception with null Publisher.");
         }
         catch(Exception e){
             Assert.assertNull(annotationsView);
+        } finally {
+            session.disconnect();
+            waitSessionDisconnected();
         }
     }
 
     public void testNewAnnotationsViewSubscriber() throws Exception {
+        Publisher publisher = new Publisher(context, "name");
+        try {
+            session = new AccPackSession(context, apiKey, sessionId);
+            session.setSessionListener(sessionListener);
+            session.connect(token);
 
-        session.setSessionListener(sessionListener);
-        session.connect(token);
+            waitSessionConnected();
+            assertNotNull("failed to create a publisher instance", publisher);
+            publisher.setPublisherListener(publisherListener);
+            session.publish(publisher);
+            waitPublisherStreamCreated();
+            Subscriber subscriber = new Subscriber(context, publisher.getStream());
 
-        waitSessionConnected();
-
-        Subscriber subscriber = new Subscriber(context, new StreamImpl(1, "", "", 1, 1, false, false, new ConnectionImpl("", 0, ""), session, 1));
-
-        AnnotationsView annotationsView = new AnnotationsView(mContext, session, apiKey, subscriber);
-        Assert.assertNotNull(annotationsView);
+            AnnotationsView annotationsView = new AnnotationsView(mContext, session, apiKey, subscriber);
+            Assert.assertNotNull(annotationsView);
+        } finally {
+            session.disconnect();
+            waitSessionDisconnected();
+            publisher.destroy();
+        }
     }
 
-    public void testNewAnnotationsViewSubscriberWithSessionNull() {
+    public void testNewAnnotationsViewSubscriberWithSessionNull() throws Exception{
         AnnotationsView annotationsView = null;
-
-        session.setSessionListener(sessionListener);
-        session.connect(token);
-
+        Publisher publisher = new Publisher(context);
 
         try {
+            session = new AccPackSession(context, apiKey, sessionId);
+            session.setSessionListener(sessionListener);
+            session.connect(token);
             waitSessionConnected();
-            Subscriber subscriber = new Subscriber(context, new StreamImpl(1, "", "", 1, 1, false, false, new ConnectionImpl("", 0, ""), session, 1));
+
+            publisher.setPublisherListener(publisherListener);
+            session.publish(publisher);
+            waitPublisherStreamCreated();
+
+            Subscriber subscriber = new Subscriber(context, publisher.getStream());
             annotationsView = new AnnotationsView(mContext, null, apiKey, subscriber);
             Assert.fail("Should have thrown an exception with null AccPackSession.");
         }
         catch(Exception e){
             Assert.assertNull(annotationsView);
+        } finally {
+            session.disconnect();
+            waitSessionDisconnected();
+            publisher.destroy();
         }
     }
 
-    public void testNewAnnotationsViewSubscriberWithSubscriberNull() {
+    public void testNewAnnotationsViewSubscriberWithSubscriberNull() throws Exception{
         AnnotationsView annotationsView = null;
 
-        session.setSessionListener(sessionListener);
-        session.connect(token);
-
-
         try {
+            session = new AccPackSession(context, apiKey, sessionId);
+            session.setSessionListener(sessionListener);
+            session.connect(token);
+
             waitSessionConnected();
             annotationsView = new AnnotationsView(mContext, session, apiKey, null);
             Assert.fail("Should have thrown an exception with null Subscriber.");
-        }
-        catch(Exception e){
+        } catch(Exception e){
             Assert.assertNull(annotationsView);
+        } finally {
+            session.disconnect();
+            waitSessionDisconnected();
         }
     }
 
-    public void testNewAnnotationsViewWithSessionNotConnected() {
+    public void testNewAnnotationsViewWithSessionNotConnected() throws Exception{
         boolean isScreensharing = true;
         AnnotationsView annotationsView = null;
 
         try {
+            session = new AccPackSession(context, apiKey, sessionId);
             session.setSessionListener(sessionListener);
 
             annotationsView = new AnnotationsView(mContext, session, apiKey, isScreensharing);
@@ -165,26 +199,32 @@ public class AnnotationsViewTest extends TestBase {
         AnnotationsView annotationsView = null;
         boolean isScreensharing = true;
 
+        try{
+            session = new AccPackSession(context, apiKey, sessionId);
+            session.setSessionListener(sessionListener);
+            session.connect(token);
 
-        session.setSessionListener(sessionListener);
-        session.connect(token);
+            waitSessionConnected();
 
-        waitSessionConnected();
+            annotationsView = new AnnotationsView(mContext, session, apiKey, isScreensharing);
+            Assert.assertNotNull(annotationsView);
 
-        annotationsView = new AnnotationsView(mContext, session, apiKey, isScreensharing);
-        Assert.assertNotNull(annotationsView);
+            AnnotationsToolbar toolbar = new AnnotationsToolbar(context);
+            annotationsView.attachToolbar(toolbar);
 
-        AnnotationsToolbar toolbar = new AnnotationsToolbar(context);
-        annotationsView.attachToolbar(toolbar);
-
-        Assert.assertNotNull(annotationsView.getToolbar());
+            Assert.assertNotNull(annotationsView.getToolbar());
+        } finally {
+            session.disconnect();
+            waitSessionDisconnected();
+        }
     }
 
-    public void testAttachNullAnnotationsToolbar() {
+    public void testAttachNullAnnotationsToolbar() throws Exception{
         AnnotationsView annotationsView = null;
         boolean isScreensharing = true;
 
         try {
+            session = new AccPackSession(context, apiKey, sessionId);
             session.setSessionListener(sessionListener);
             session.connect(token);
 
@@ -198,6 +238,9 @@ public class AnnotationsViewTest extends TestBase {
 
         }catch (Exception e){
             Assert.assertNull(annotationsView.getToolbar());
+        } finally {
+            session.disconnect();
+            waitSessionDisconnected();
         }
     }
 
@@ -205,25 +248,32 @@ public class AnnotationsViewTest extends TestBase {
         AnnotationsView annotationsView = null;
         boolean isScreensharing = true;
 
-        session.setSessionListener(sessionListener);
-        session.connect(token);
+        try{
+            session = new AccPackSession(context, apiKey, sessionId);
+            session.setSessionListener(sessionListener);
+            session.connect(token);
 
-        waitSessionConnected();
+            waitSessionConnected();
 
-        annotationsView = new AnnotationsView(mContext, session, apiKey, isScreensharing);
-        Assert.assertNotNull(annotationsView);
+            annotationsView = new AnnotationsView(mContext, session, apiKey, isScreensharing);
+            Assert.assertNotNull(annotationsView);
 
-        AnnotationsVideoRenderer videoRenderer = new AnnotationsVideoRenderer(context);
-        annotationsView.setVideoRenderer(videoRenderer);
+            AnnotationsVideoRenderer videoRenderer = new AnnotationsVideoRenderer(context);
+            annotationsView.setVideoRenderer(videoRenderer);
 
-        Assert.assertNotNull(annotationsView.getVideoRenderer());
+            Assert.assertNotNull(annotationsView.getVideoRenderer());
+        } finally {
+            session.disconnect();
+            waitSessionDisconnected();
+        }
     }
 
-    public void testSetNullVideoRenderer() {
+    public void testSetNullVideoRenderer() throws Exception{
         AnnotationsView annotationsView = null;
         boolean isScreensharing = true;
 
         try {
+            session = new AccPackSession(context, apiKey, sessionId);
             session.setSessionListener(sessionListener);
             session.connect(token);
 
@@ -237,6 +287,9 @@ public class AnnotationsViewTest extends TestBase {
 
         }catch (Exception e){
             Assert.assertNull(annotationsView.getVideoRenderer());
+        } finally {
+            session.disconnect();
+            waitSessionDisconnected();
         }
     }
 

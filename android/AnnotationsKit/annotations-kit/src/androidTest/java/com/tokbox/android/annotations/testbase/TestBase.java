@@ -5,6 +5,8 @@ import android.test.AndroidTestCase;
 import android.util.Log;
 
 import com.opentok.android.OpentokError;
+import com.opentok.android.Publisher;
+import com.opentok.android.PublisherKit;
 import com.opentok.android.Session;
 import com.opentok.android.Stream;
 import com.tokbox.android.accpack.AccPackSession;
@@ -29,10 +31,22 @@ public class TestBase extends AndroidTestCase {
     protected AccPackSession session;
 
     protected AtomicBoolean sessionConnected = new AtomicBoolean();
+    protected AtomicBoolean sessionDisconnected = new AtomicBoolean();
     protected AtomicBoolean sessionError = new AtomicBoolean();
+    protected AtomicBoolean publisherStreamCreated = new AtomicBoolean();
+    protected AtomicBoolean publisherError = new AtomicBoolean();
+    protected AtomicBoolean publisherStreamDestroyed = new AtomicBoolean();
 
     protected CountDownLatch sessionConnectedLock = new CountDownLatch(1);
+    protected CountDownLatch sessionDisconnectedLock = new CountDownLatch(1);
     protected CountDownLatch sessionErrorLock = new CountDownLatch(1);
+    protected CountDownLatch publisherStreamCreatedLock = new CountDownLatch(1);
+    protected CountDownLatch publisherStreamDestroyedLock = new CountDownLatch(1);
+    protected CountDownLatch publisherErrorLock = new CountDownLatch(1);
+
+    protected Stream publisherStreamCreatedStream = null;
+
+    protected OpentokError publisherLastError = null;
 
     protected OpentokError sessionLastError = null;
 
@@ -58,6 +72,9 @@ public class TestBase extends AndroidTestCase {
         @Override
         public void onDisconnected(Session session) {
             Log.d(LOGTAG,"Session - onDisconnected");
+            sessionDisconnected.set(true);
+            sessionDisconnectedLock.countDown();
+            session = null;
         }
 
         @Override
@@ -66,6 +83,33 @@ public class TestBase extends AndroidTestCase {
             sessionConnected.set(true);
             sessionConnectedLock.countDown();
         }
+    };
+
+    protected Publisher.PublisherListener publisherListener = new Publisher.PublisherListener() {
+
+        @Override
+        public void onStreamDestroyed(PublisherKit publisher, Stream stream) {
+            Log.d(LOGTAG,"Publisher - onStreamDestroyed");
+            publisherStreamDestroyed.set(true);
+            publisherStreamDestroyedLock.countDown();
+        }
+
+        @Override
+        public void onStreamCreated(PublisherKit publisher, Stream stream) {
+            Log.d(LOGTAG,"Publisher - onStreamCreated");
+            publisherStreamCreatedStream = stream;
+            publisherStreamCreated.set(true);
+            publisherStreamCreatedLock.countDown();
+        }
+
+        @Override
+        public void onError(PublisherKit publisher, OpentokError error) {
+            Log.d(LOGTAG,"Publisher - onError");
+            publisherLastError = error;
+            publisherError.set(true);
+            publisherErrorLock.countDown();
+        }
+
     };
 
     protected void setUp() throws Exception {
@@ -87,7 +131,6 @@ public class TestBase extends AndroidTestCase {
         this.apiKey = String.valueOf(key);
         this.token = token;
         this.sessionId = sessionId;
-        this.session = new AccPackSession(this.context, this.apiKey, this.sessionId);
     }
 
     protected void tearDown() throws Exception {
@@ -97,13 +140,30 @@ public class TestBase extends AndroidTestCase {
         sessionErrorLock = new CountDownLatch(1);
         sessionConnected.set(false);
         sessionError.set(false);
-    }
+        this.session = null;
 
+    }
 
     protected void waitSessionConnected() throws InterruptedException {
         sessionConnectedLock.await(WAIT_TIME, TimeUnit.SECONDS);
         assertTrue("session failed to connect", sessionConnected.get());
         assertFalse(sessionError.get());
+        assertNull(sessionLastError);
+    }
+
+    protected void waitSessionDisconnected() throws InterruptedException {
+        sessionDisconnectedLock.await(WAIT_TIME, TimeUnit.SECONDS);
+        assertTrue("session failed to disconnect", sessionDisconnected.get());
+        if (!sessionError.get()){
+            assertFalse(sessionError.get());
+            assertNull(sessionLastError);
+        }
+    }
+
+    protected void waitPublisherStreamCreated() throws InterruptedException {
+        publisherStreamCreatedLock.await(WAIT_TIME, TimeUnit.SECONDS);
+        assertTrue(publisherStreamCreated.get());
+        assertFalse(publisherError.get());
         assertNull(sessionLastError);
     }
 }
