@@ -90,7 +90,7 @@
 
 - (void)removeAllAnnotatables {
     
-    [self.annotationDataManager pop];
+    [self.annotationDataManager popAll];
     [self setNeedsDisplay];
     [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionErase variation:KLogVariationSuccess completion:nil];
 }
