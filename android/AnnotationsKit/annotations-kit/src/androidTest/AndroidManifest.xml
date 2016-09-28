@@ -12,8 +12,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <instrumentation
-        android:name="com.tokbox.android.annotations.testbase.TestBase"
-        android:targetPackage="com.tokbox.android.annotations.testbase"
+        android:name="com.tokbox.android.annotations.testbase.TestRunner"
+        android:targetPackage="com.tokbox.android.annotations.test"
         tools:replace="android:targetPackage" />
 
     <application>

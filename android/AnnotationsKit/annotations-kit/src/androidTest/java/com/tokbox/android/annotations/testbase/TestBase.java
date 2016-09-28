@@ -118,17 +118,17 @@ public class TestBase extends AndroidTestCase {
         this.context = getContext();
     }
 
-    protected void setUp(int key, String secret) throws Exception {
+    protected void setUp(String key, String secret) throws Exception {
         super.setUp();
 
         this.context = getContext();
-        this.apiKey = String.valueOf(key);
+        this.apiKey = key;
         this.apiSecret = secret;
 
     }
-    protected void setUp(String sessionId, String token, int key) throws Exception {
+    protected void setUp(String sessionId, String token, String key) throws Exception {
         this.context = getContext();
-        this.apiKey = String.valueOf(key);
+        this.apiKey = key;
         this.token = token;
         this.sessionId = sessionId;
     }
@@ -138,10 +138,24 @@ public class TestBase extends AndroidTestCase {
 
         sessionConnectedLock = new CountDownLatch(1);
         sessionErrorLock = new CountDownLatch(1);
+        sessionDisconnectedLock = new CountDownLatch(1);
         sessionConnected.set(false);
         sessionError.set(false);
-        this.session = null;
+        sessionDisconnected.set(false);
 
+
+        publisherStreamCreated.set(false);
+        publisherError.set(false);
+        publisherStreamDestroyed.set(false);
+
+        publisherStreamCreatedLock = new CountDownLatch(1);
+        publisherStreamDestroyedLock = new CountDownLatch(1);
+        publisherErrorLock = new CountDownLatch(1);
+
+        this.session = null;
+        this.publisherStreamCreatedStream = null;
+        this.publisherLastError = null;
+        this.sessionLastError = null;
     }
 
     protected void waitSessionConnected() throws InterruptedException {
