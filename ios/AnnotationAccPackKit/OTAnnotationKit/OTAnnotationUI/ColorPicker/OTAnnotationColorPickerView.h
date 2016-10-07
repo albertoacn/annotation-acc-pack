@@ -46,14 +46,19 @@ typedef NS_ENUM(NSUInteger, OTAnnotationColorPickerViewOrientation) {
 - (instancetype)initWithFrame:(CGRect)frame;
 
 /**
- *  Getter to retrieve the selected color.
+ *  The currently selected color.
  */
 @property (readonly, nonatomic) UIColor *selectedColor;
 
+/**
+ *  The orientation of this color picker view.
+ *  The default value is OTAnnotationColorPickerViewOrientationPortrait.
+ *  Set it to OTAnnotationColorPickerViewOrientationLandscape to have this color picker view vertical.
+ */
 @property (nonatomic) OTAnnotationColorPickerViewOrientation annotationColorPickerViewOrientation;
 
 /**
- *  The object that acts as the delegate of the color picker view protocol.
+ *  The object that acts as the delegate of the color picker view.
  *
  *  The delegate must adopt the OTAnnotationColorPickerViewProtocol protocol. The delegate is not retained.
  */

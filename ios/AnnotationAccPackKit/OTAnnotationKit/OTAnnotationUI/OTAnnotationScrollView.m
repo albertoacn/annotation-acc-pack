@@ -129,7 +129,8 @@
 
 - (void)initializeToolbarView {
     CGRect mainBounds = [UIScreen mainScreen].bounds;
-    self.toolbarView = [[OTAnnotationToolbarView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(mainBounds), DefaultToolbarHeight) annotationScrollView:self];
+    self.toolbarView = [[OTAnnotationToolbarView alloc] initWithFrame:CGRectMake(0, 0, CGRectGetWidth(mainBounds), DefaultToolbarHeight)
+                                                 annotationScrollView:self];
     [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionUseToolbar variation:KLogVariationSuccess completion:nil];
 }
 

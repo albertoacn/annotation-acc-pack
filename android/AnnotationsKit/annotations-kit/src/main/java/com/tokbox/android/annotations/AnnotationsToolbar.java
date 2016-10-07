@@ -35,7 +35,7 @@ public class AnnotationsToolbar extends LinearLayout {
     /**
      * Monitors state changes in the AnnotationsToolbar.
      *
-     **/
+     */
     public  interface ActionsListener {
 
         /**
@@ -50,18 +50,9 @@ public class AnnotationsToolbar extends LinearLayout {
     }
 
     /**
-     * Set AnnotationsToolbar listener
-     * @param listener: ActionsListener
-     **/
-    public void setActionListener(ActionsListener listener) {
-        this.mActionsListener = listener;
-    }
-
-
-    /**
      * Constructor
      * @param context Application context
-     **/
+     */
     public AnnotationsToolbar(Context context) throws Exception {
         super(context);
 
@@ -76,11 +67,11 @@ public class AnnotationsToolbar extends LinearLayout {
         init();
     }
 
-    /*
+    /**
      * Constructor
      * @param context Application context
      * @param attrs A collection of attributes
-     **/
+     */
     public AnnotationsToolbar(Context context, AttributeSet attrs) throws Exception {
         super(context, attrs);
 
@@ -94,6 +85,14 @@ public class AnnotationsToolbar extends LinearLayout {
         Display display = wm.getDefaultDisplay();
 
         init();
+    }
+
+    /**
+     * Sets AnnotationsToolbar listener
+     * @param listener: ActionsListener
+     */
+    public void setActionListener(ActionsListener listener) {
+        this.mActionsListener = listener;
     }
 
     private void init() {
@@ -129,28 +128,6 @@ public class AnnotationsToolbar extends LinearLayout {
         mDoneBtn.setOnClickListener(mActionsClickListener);
 
         mDoneBtn.setSelected(false);
-    }
-
-    /*
-     * Restart toolbar actions
-     **/
-    public void restart(){
-        int mCount = mMainToolbar.getChildCount();
-        for (int i = 0; i < mCount; ++i) {
-            mMainToolbar.getChildAt(i).setSelected(false);
-        }
-
-        mCount = mColorToolbar.getChildCount();
-        for (int i = 0; i < mCount; ++i) {
-            mColorToolbar.getChildAt(i).setSelected(false);
-        }
-
-        int color = getResources().getColor(R.color.picker_color_orange);
-        mPickerColorBtn.setColorFilter(color);
-        if  (mActionsListener != null ){
-            mActionsListener.onColorSelected(color);
-        }
-        mDoneBtn.setVisibility(GONE);
     }
 
 
@@ -251,5 +228,28 @@ public class AnnotationsToolbar extends LinearLayout {
             }
         }
     }
+
+    /**
+     * Restarts the toolbar actions
+     */
+    public void restart(){
+        int mCount = mMainToolbar.getChildCount();
+        for (int i = 0; i < mCount; ++i) {
+            mMainToolbar.getChildAt(i).setSelected(false);
+        }
+
+        mCount = mColorToolbar.getChildCount();
+        for (int i = 0; i < mCount; ++i) {
+            mColorToolbar.getChildAt(i).setSelected(false);
+        }
+
+        int color = getResources().getColor(R.color.picker_color_orange);
+        mPickerColorBtn.setColorFilter(color);
+        if  (mActionsListener != null ){
+            mActionsListener.onColorSelected(color);
+        }
+        mDoneBtn.setVisibility(GONE);
+    }
+
 
 }

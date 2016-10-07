@@ -36,13 +36,17 @@
                                      self.sharer.subscribeToAudio = NO;
                                      
                                      self.annotator = [[OTAnnotator alloc] init];
-                                     [self.annotator connectForReceivingAnnotationWithSize:self.view.bounds.size completionHandler:^(OTAnnotationSignal signal, NSError *error) {
-                                         if (signal == OTAnnotationSessionDidConnect){
-                                             self.annotator.annotationScrollView.frame = self.view.bounds;
-                                             self.annotator.annotationScrollView.scrollView.contentSize = self.view.bounds.size;
-                                             [self.view addSubview:self.annotator.annotationScrollView];
-                                         }
-                                     }];
+                                     [self.annotator connectForReceivingAnnotationWithSize:self.view.bounds.size
+                                                                         completionHandler:^(OTAnnotationSignal signal, NSError *error) {
+                                                                             if (signal == OTAnnotationSessionDidConnect){
+                                                                                 self.annotator.annotationScrollView.frame = self.view.bounds;
+                                                                                 [self.view addSubview:self.annotator.annotationScrollView];
+                                                                             }
+                                                                         }];
+                                     
+                                     self.annotator.dataReceivingHandler = ^(NSArray *data) {
+                                         NSLog(@"%@", data);
+                                     };
                                  }
                              }
                          }];

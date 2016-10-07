@@ -5,10 +5,63 @@
 //
 
 #import "OTAnnotationToolbarView.h"
+#import "UIView+Helper.h"
+#import "UIButton+AutoLayoutHelper.h"
+
+@interface OTAnnotationToolbarButton : UIButton
+@end
+
+@implementation OTAnnotationToolbarButton
+
+- (instancetype)init {
+    if (self = [super init]) {
+        self.translatesAutoresizingMaskIntoConstraints = NO;
+        self.imageEdgeInsets = UIEdgeInsetsMake(6, 6, 6, 6);
+    }
+    return self;
+}
+
+- (void)setEnabled:(BOOL)enabled {
+    super.enabled = enabled;
+    
+    if (enabled) {
+        [self setAlpha:1.0];
+    }
+    else {
+        [self setAlpha:0.6];
+    }
+}
+
+- (void)didMoveToSuperview {
+    if (!self.superview) return;
+    [self addCenterConstraints];
+}
+
+@end
+
+@interface OTAnnotationToolbarDoneButton : UIButton
+@end
+
+@implementation OTAnnotationToolbarDoneButton
+
+- (instancetype)init {
+    if (self = [super init]) {
+        self.translatesAutoresizingMaskIntoConstraints = NO;
+        self.imageEdgeInsets = UIEdgeInsetsMake(2, 2, 2, 2);
+    }
+    return self;
+}
+
+- (void)didMoveToSuperview {
+    if (!self.superview) return;
+    [self addAttachedLayoutConstantsToSuperview];
+}
+
+@end
+
 #import "OTAnnotationToolbarView_UserInterfaces.h"
 #import "OTAnnotationToolbarView+Animation.h"
 #import "OTAnnotationColorPickerView.h"
-#import "OTAnnotationToolbarButton.h"
 #import "OTAnnotationKitBundle.h"
 
 #import <LHToolbar/LHToolbar.h>
@@ -16,7 +69,6 @@
 
 #import "OTAnnotationScreenCaptureViewController.h"
 #import "OTAnnotationEditTextViewController.h"
-#import "UIView+Helper.h"
 #import "UIViewController+Helper.h"
 #import "Constants.h"
 

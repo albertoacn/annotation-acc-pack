@@ -33,14 +33,10 @@
 
 @implementation OTAnnotator
 
-+ (void)setOpenTokApiKey:(NSString *)apiKey
-               sessionId:(NSString *)sessionId
-                   token:(NSString *)token {
-    
-    [OTAcceleratorSession setOpenTokApiKey:apiKey sessionId:sessionId token:token];
-}
-
 - (instancetype)init {
+    
+    if (![OTAcceleratorSession getAcceleratorPackSession]) return nil;
+    
     if (self = [super init]) {
         _session = [OTAcceleratorSession getAcceleratorPackSession];
     }
@@ -101,7 +97,7 @@
     }
     
     if (self.delegate) {
-        [self.delegate annotationWithSignal:signal error:error];
+        [self.delegate annotator:self signal:signal error:error];
     }
 }
 
@@ -139,6 +135,24 @@
                          error:error];
 }
 
+- (void)session:(OTSession *)session connectionCreated:(OTConnection *)connection {
+    
+}
+
+- (void)session:(OTSession *)session connectionDestroyed:(OTStream *)stream {
+    
+}
+
+- (void)sessionDidBeginReconnecting:(OTSession *)session {
+    [self notifiyAllWithSignal:OTAnnotationSessionDidBeginReconnecting
+                         error:nil];
+}
+
+- (void)sessionDidReconnect:(OTSession *)session {
+    [self notifiyAllWithSignal:OTAnnotationSessionDidReconnect
+                         error:nil];
+}
+
 // OPENTOK SIGNALING
 - (void)session:(OTSession*)session
 receivedSignalType:(NSString*)type
@@ -152,6 +166,15 @@ receivedSignalType:(NSString*)type
         ![self.session.connection.connectionId isEqualToString:connection.connectionId]) {
         
         NSArray *jsonArray = [JSON parseJSON:string];
+        
+        // notify receving data
+        if (self.dataReceivingHandler) {
+            self.dataReceivingHandler(jsonArray);
+        }
+        
+        if (self.delegate) {
+            [self.delegate annotator:self receivedAnnotationData:jsonArray];
+        }
         if (jsonArray.count == 0) return;
         
         // set path attributes
@@ -330,9 +353,16 @@ receivedSignalType:(NSString*)type
     NSError *error;
     NSString *jsonString = [JSON stringify:signalingPoints];
     [[OTAcceleratorSession getAcceleratorPackSession] signalWithType:@"ios_otAnnotation_pen" string:jsonString connection:latestScreenShareStream.connection error:&error];
-    if (error) {
-        NSLog(@"%@", error);
+    
+    // notify sending data
+    if (self.dataReceivingHandler) {
+        self.dataReceivingHandler(signalingPoints);
     }
+    
+    if (self.delegate) {
+        [self.delegate annotator:self receivedAnnotationData:signalingPoints];
+    }
+    
     signalingPoints = nil;
 }
 

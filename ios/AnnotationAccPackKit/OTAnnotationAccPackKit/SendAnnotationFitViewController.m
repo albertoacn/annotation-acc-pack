@@ -36,7 +36,7 @@
                                      self.sharer.publishAudio = NO;
                                      self.sharer.subscribeToAudio = NO;
                                  }
-                                 else if (signal == OTScreenShareSignalSubscriberConnect) {
+                                 else if (signal == OTScreenShareSignalSubscriberDidConnect) {
                                      
                                      [self.sharer.subscriberView removeFromSuperview];
                                      self.sharer.subscriberView.frame = self.view.bounds;
@@ -57,6 +57,10 @@
                                              self.annotator.annotationScrollView.annotationView.currentAnnotatable = [OTAnnotationPath pathWithStrokeColor:[UIColor yellowColor]];
                                          }
                                      }];
+                                     
+                                     self.annotator.dataSendingHandler = ^(NSArray *data, NSError *error) {
+                                         NSLog(@"%@", data);
+                                     };
                                  }
                              }
                          }];

@@ -7,7 +7,7 @@
 //
 
 #import "AppDelegate.h"
-#import <OTAnnotationKit/OTAnnotationKit.h>
+#import <OTAcceleratorPackUtil/OTAcceleratorPackUtil.h>
 
 @interface AppDelegate ()
 

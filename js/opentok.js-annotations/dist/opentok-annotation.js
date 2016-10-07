@@ -17,7 +17,7 @@
 
   // vars for the analytics logs. Internal use
   var _logEventData = {
-    clientVersion: 'js-vsol-1.0.0',
+    clientVersion: 'js-vsol-1.1.0',
     componentId: 'annotationsAccPack',
     name: 'guidAnnotationsKit',
     actionStartDrawing: 'StartDrawing',
@@ -160,44 +160,9 @@
         self.overlay = null;
       }
 
-      if (item.id === 'OT_capture') {
-        self.selectedItem = item;
-
-        if (!self.overlay) {
-          self.overlay = document.createElement('div');
-          self.overlay.id = 'captureOverlay';
-          self.overlay.style.position = 'absolute';
-          self.overlay.style.top = '0px';
-          self.overlay.style.width = self.parent.clientWidth + 'px';
-          self.overlay.style.height = self.parent.clientHeight + 'px';
-          self.overlay.style.background = 'rgba(0,0,0,0.4) url("' +
-            self.imageAssets +'annotation-camera.png") no-repeat center';
-          self.overlay.style.backgroundSize = '50px 50px';
-          self.overlay.style.cursor = 'pointer';
-          self.overlay.style.opacity = 0;
-
-          self.parent.appendChild(self.overlay);
-
-          self.parent.onmouseover = function () {
-            self.overlay.style.opacity = 1;
-            self.overlay.style.zIndex = 1010;
-          };
-
-          self.parent.onmouseout = function () {
-            self.overlay.style.opacity = 0;
-          };
-
-          self.overlay.onclick = function () {
-            self.captureScreenshot();
-            self.parent.removeChild(self.overlay);
-            self.overlay = null;
-            self.parent.onmouseover = null;
-            self.parent.onmouseout = null;
-          };
-        } else {
-          self.overlay.style = 'inline';
-        }
-      } else if (item.id.indexOf('OT_line_width') !== -1) {
+      if (item && item.id === 'OT_capture') {
+        self.captureScreenshot();
+      } else if (item && item.id.indexOf('OT_line_width') !== -1) {
         if (item.size) {
           self.changeLineWidth(item.size);
         }
@@ -227,6 +192,15 @@
         });
       }
     };
+
+    this.undo = function () {
+      undoLast(false, self.session.connection.connectionId);
+      if (self.session) {
+        self.session.signal({
+          type: 'otAnnotation_undo'
+        });
+      }
+    }
 
     // TODO Allow the user to choose the image type? (jpg, png) Also allow size?
     /**
@@ -385,7 +359,8 @@
                   mirrored: mirrored,
                   startPoint: self.isStartPoint, // Each segment is treated as a new set of points
                   endPoint: false,
-                  selectedItem: selectedItem
+                  selectedItem: selectedItem,
+                  guid: event.guid
                 };
                 draw(update, true);
                 client.lastX = x;
@@ -413,7 +388,8 @@
                 mirrored: mirrored,
                 startPoint: self.isStartPoint, // Each segment is treated as a new set of points
                 endPoint: true,
-                selectedItem: selectedItem
+                selectedItem: selectedItem,
+                guid: event.guid
               };
               draw(update, true);
               client.lastX = x;
@@ -440,13 +416,18 @@
             canvasWidth: canvas.width,
             canvasHeight: canvas.height,
             mirrored: mirrored,
-            selectedItem: selectedItem
+            selectedItem: selectedItem,
+            guid: event.guid
           };
 
           draw(update);
           !resizeEvent && sendUpdate(update);
         } else {
           // We have a shape or custom object
+
+          // We are currently using a constant default width for shapes
+          var shapeLineWidth = 2;
+
           if (selectedItem && selectedItem.points) {
             client.mX = x;
             client.mY = y;
@@ -464,7 +445,7 @@
                 if (client.dragging) {
                   update = {
                     color: resizeEvent ? event.userColor : self.userColor,
-                    lineWidth: resizeEvent ? event.lineWidth : self.lineWidth,
+                    lineWidth: resizeEvent ? event.lineWidth : shapeLineWidth,
                     selectedItem: selectedItem
                       // INFO The points for scaling will get added when drawing is complete
                   };
@@ -487,7 +468,7 @@
                     toX: client.mX,
                     toY: client.mY,
                     color: resizeEvent ? event.userColor : self.userColor,
-                    lineWidth: resizeEvent ? event.lineWidth : self.lineWidth,
+                    lineWidth: resizeEvent ? event.lineWidth : shapeLineWidth,
                     videoWidth: self.videoFeed.videoElement().clientWidth,
                     videoHeight: self.videoFeed.videoElement().clientHeight,
                     canvasWidth: canvas.width,
@@ -495,8 +476,8 @@
                     mirrored: mirrored,
                     smoothed: false,
                     startPoint: true,
-                    endPoint: true,
-                    selectedItem: selectedItem
+                    selectedItem: selectedItem,
+                    guid: event.guid
                   };
 
                   drawHistory.push(update);
@@ -529,7 +510,7 @@
                       toX: pointX,
                       toY: pointY,
                       color: resizeEvent ? event.userColor : self.userColor,
-                      lineWidth: resizeEvent ? event.lineWidth : self.lineWidth,
+                      lineWidth: resizeEvent ? event.lineWidth : shapeLineWidth,
                       videoWidth: self.videoFeed.videoElement().clientWidth,
                       videoHeight: self.videoFeed.videoElement().clientHeight,
                       canvasWidth: canvas.width,
@@ -537,7 +518,9 @@
                       mirrored: mirrored,
                       smoothed: selectedItem.enableSmoothing,
                       startPoint: firstPoint,
-                      endPoint: endPoint
+                      endPoint: endPoint,
+                      guid: event.guid
+
                     };
 
                     drawHistory.push(update);
@@ -556,6 +539,14 @@
           }
         }
       }
+    }
+
+    function guid() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0,
+          v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
     }
 
     addEventListeners(canvas, 'mousedown mousemove mouseup mouseout touchstart touchmove touchend', function (event) {
@@ -583,6 +574,7 @@
 
         event.userColor = self.userColor;
         event.lineWidth = self.lineWidth;
+        event.guid = guid();
         eventHistory.push(event);
       }
 
@@ -742,7 +734,6 @@
         var isText = !!history.selectedItem && history.selectedItem.title === 'Text' && history.text;
 
         if (isText) {
-
           ctx.font = history.font;
           ctx.fillStyle = history.color;
           ctx.fillText(history.text, history.fromX, history.fromY);
@@ -770,6 +761,7 @@
               // console.log('Points: (' + (history.fromX + history.toX) / 2 + ', ' + (history.fromY + history.toY) / 2 + ')');
               // console.log('Control Points: (' + history.fromX + ', ' + history.fromY + ')');
               ctx.quadraticCurveTo(history.fromX, history.fromY, (history.fromX + history.toX) / 2, (history.fromY + history.toY) / 2);
+
               ctx.stroke();
             }
           } else {
@@ -895,14 +887,6 @@
       };
     };
 
-    var drawTextUpdate = function (update) {
-
-
-
-
-
-    };
-
     var drawIncoming = function (update, resizeEvent, index) {
 
       var iCanvas = {
@@ -1000,8 +984,8 @@
     var clearCanvas = function (incoming, cid) {
       // console.log('cid: ' + cid);
       // Remove all elements from history that were drawn by the sender
+
       drawHistory = drawHistory.filter(function (history) {
-        console.log(history.fromId);
         return history.fromId !== cid;
       });
 
@@ -1016,10 +1000,50 @@
         updateHistory = [];
       }
 
+
+
       // Refresh the canvas
       draw();
     };
 
+    var undoLast = function (incoming, cid, itemsToRemove) {
+
+      var historyItem;
+      var removed;
+      var endPoint = false;
+      var removedItems = [];
+      for (var i = drawHistory.length - 1; i >= 0; i--) {
+        historyItem = drawHistory[i];
+        if (historyItem.fromId === cid) {
+          endPoint = endPoint || historyItem.endPoint;
+          removed = drawHistory.splice(i, 1)[0];
+          removedItems.push(removed.guid);
+          if (!endPoint || (endPoint && removed.startPoint === true)) {
+            break;
+          }
+        }
+      }
+
+      if (incoming) {
+        updateHistory = updateHistory.filter(function (history) {
+          return !itemsToRemove.includes(history.guid);
+        });
+      } else {
+        eventHistory = eventHistory.filter(function (history) {
+          return !removedItems.includes(history.guid);
+        });
+
+        self.session.signal({
+          type: 'otAnnotation_undo',
+          data: JSON.stringify(removedItems)
+        });
+      }
+
+      draw();
+    }
+
+
+    var count = 0;
     /** Signal Handling **/
     if (self.videoFeed.session) {
       self.videoFeed.session.on({
@@ -1045,6 +1069,12 @@
           if (event.from.connectionId !== self.session.connection.connectionId) {
             // Only clear elements drawn by the sender's (from) Id
             clearCanvas(true, event.from.connectionId);
+          }
+        },
+        'signal:otAnnotation_undo': function (event) {
+          if (event.from.connectionId !== self.session.connection.connectionId) {
+            // Only clear elements drawn by the sender's (from) Id
+            undoLast(true, event.from.connectionId, JSON.parse(event.data));
           }
         },
         connectionCreated: function (event) {
@@ -1132,118 +1162,147 @@
     this.parent = options.container;
     this.externalWindow = options.externalWindow;
     // TODO Allow 'style' objects to be passed in for buttons, menu toolbar, etc?
-    this.backgroundColor = options.backgroundColor || 'rgba(0, 0, 0, 0.7)';
-    this.buttonWidth = options.buttonWidth || '40px';
-    this.buttonHeight = options.buttonHeight || '40px';
-    this.iconWidth = options.iconWidth || '30px';
-    this.iconHeight = options.iconHeight || '30px';
+    this.backgroundColor = options.backgroundColor || 'rgba(102, 102, 102, 0.90)';
+    this.subpanelBackgroundColor = options.subpanelBackgroundColor || '#323232';
+
     var imageAssets = options.imageAssets || DEFAULT_ASSET_URL;
 
     var toolbarItems = [{
-      id: 'OT_pen',
-      title: 'Pen',
-      icon: [imageAssets, 'annotation-freehand.png'].join(''),
-      selectedIcon: [imageAssets, 'annotation-freehand_selected.png'].join('')
-    }, {
-      id: 'OT_line',
-      title: 'Line',
-      icon: [imageAssets, 'annotation-line.png'].join(''),
-      selectedIcon: [imageAssets, 'annotation-line_selected.png'].join(''),
-      points: [
-        [0, 0],
-        [0, 1]
-      ]
-    }, {
-      id: 'OT_shapes',
-      title: 'Shapes',
-      icon: [imageAssets, 'annotation-shapes.png'].join(''),
-      items: [{
-        id: 'OT_arrow',
-        title: 'Arrow',
-        icon: [imageAssets, 'annotation-arrow.png'].join(''),
-        points: [
-          [0, 1],
-          [3, 1],
-          [3, 0],
-          [5, 2],
-          [3, 4],
-          [3, 3],
-          [0, 3],
-          [0, 1] // Reconnect point
-        ]
+        id: 'OT_pen',
+        title: 'Pen',
+        icon: [imageAssets, 'annotation-pencil.png'].join(''),
+        selectedIcon: [imageAssets, 'annotation-pencil.png'].join(''),
+        items: { /* Built dynamically */ }
       }, {
-        id: 'OT_rect',
-        title: 'Rectangle',
-        icon: [imageAssets, 'annotation-rectangle.png'].join(''),
-        points: [
-          [0, 0],
-          [1, 0],
-          [1, 1],
-          [0, 1],
-          [0, 0] // Reconnect point
-        ]
+        id: 'OT_colors',
+        title: 'Colors',
+        icon: '',
+        items: { /* Built dynamically */ }
       }, {
-        id: 'OT_oval',
-        title: 'Oval',
-        icon: [imageAssets, 'annotation-oval.png'].join(''),
-        enableSmoothing: true,
-        points: [
-          [0, 0.5],
-          [0.5 + 0.5 * Math.cos(5 * Math.PI / 4), 0.5 + 0.5 * Math.sin(5 * Math.PI / 4)],
-          [0.5, 0],
-          [0.5 + 0.5 * Math.cos(7 * Math.PI / 4), 0.5 + 0.5 * Math.sin(7 * Math.PI / 4)],
-          [1, 0.5],
-          [0.5 + 0.5 * Math.cos(Math.PI / 4), 0.5 + 0.5 * Math.sin(Math.PI / 4)],
-          [0.5, 1],
-          [0.5 + 0.5 * Math.cos(3 * Math.PI / 4), 0.5 + 0.5 * Math.sin(3 * Math.PI / 4)],
-          [0, 0.5],
-          [0.5 + 0.5 * Math.cos(5 * Math.PI / 4), 0.5 + 0.5 * Math.sin(5 * Math.PI / 4)]
-        ]
+        id: 'OT_shapes',
+        title: 'Shapes',
+        icon: [imageAssets, 'annotation-shapes.png'].join(''),
+        items: [{
+          id: 'OT_rect',
+          title: 'Rectangle',
+          icon: [imageAssets, 'annotation-rectangle.png'].join(''),
+          points: [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            [0, 0] // Reconnect point
+          ]
+        },
+        {
+          id: 'OT_rect_fill',
+          title: 'Rectangle-Fill',
+          icon: [imageAssets, 'annotation-rectangle.png'].join(''),
+          points: [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            [0, 0] // Reconnect point
+          ]
+        }, {
+          id: 'OT_oval',
+          title: 'Oval',
+          icon: [imageAssets, 'annotation-oval.png'].join(''),
+          enableSmoothing: true,
+          points: [
+            [0, 0.5],
+            [0.5 + 0.5 * Math.cos(5 * Math.PI / 4), 0.5 + 0.5 * Math.sin(5 * Math.PI / 4)],
+            [0.5, 0],
+            [0.5 + 0.5 * Math.cos(7 * Math.PI / 4), 0.5 + 0.5 * Math.sin(7 * Math.PI / 4)],
+            [1, 0.5],
+            [0.5 + 0.5 * Math.cos(Math.PI / 4), 0.5 + 0.5 * Math.sin(Math.PI / 4)],
+            [0.5, 1],
+            [0.5 + 0.5 * Math.cos(3 * Math.PI / 4), 0.5 + 0.5 * Math.sin(3 * Math.PI / 4)],
+            [0, 0.5],
+            [0.5 + 0.5 * Math.cos(5 * Math.PI / 4), 0.5 + 0.5 * Math.sin(5 * Math.PI / 4)]
+          ]
+        }, {
+          id: 'OT_oval_fill',
+          title: 'Oval-Fill',
+          icon: [imageAssets, 'annotation-oval-fill.png'].join(''),
+          enableSmoothing: true,
+          points: [
+            [0, 0.5],
+            [0.5 + 0.5 * Math.cos(5 * Math.PI / 4), 0.5 + 0.5 * Math.sin(5 * Math.PI / 4)],
+            [0.5, 0],
+            [0.5 + 0.5 * Math.cos(7 * Math.PI / 4), 0.5 + 0.5 * Math.sin(7 * Math.PI / 4)],
+            [1, 0.5],
+            [0.5 + 0.5 * Math.cos(Math.PI / 4), 0.5 + 0.5 * Math.sin(Math.PI / 4)],
+            [0.5, 1],
+            [0.5 + 0.5 * Math.cos(3 * Math.PI / 4), 0.5 + 0.5 * Math.sin(3 * Math.PI / 4)],
+            [0, 0.5],
+            [0.5 + 0.5 * Math.cos(5 * Math.PI / 4), 0.5 + 0.5 * Math.sin(5 * Math.PI / 4)]
+          ]
+        },{
+          id: 'OT_star',
+          title: 'Star',
+          icon: [imageAssets, 'annotation-star.png'].join(''),
+          points: [
+            /* eslint-disable max-len */
+            [0.5 + 0.5 * Math.cos(90 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(90 * (Math.PI / 180))],
+            [0.5 + 0.25 * Math.cos(126 * (Math.PI / 180)), 0.5 + 0.25 * Math.sin(126 * (Math.PI / 180))],
+            [0.5 + 0.5 * Math.cos(162 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(162 * (Math.PI / 180))],
+            [0.5 + 0.25 * Math.cos(198 * (Math.PI / 180)), 0.5 + 0.25 * Math.sin(198 * (Math.PI / 180))],
+            [0.5 + 0.5 * Math.cos(234 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(234 * (Math.PI / 180))],
+            [0.5 + 0.25 * Math.cos(270 * (Math.PI / 180)), 0.5 + 0.25 * Math.sin(270 * (Math.PI / 180))],
+            [0.5 + 0.5 * Math.cos(306 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(306 * (Math.PI / 180))],
+            [0.5 + 0.25 * Math.cos(342 * (Math.PI / 180)), 0.5 + 0.25 * Math.sin(342 * (Math.PI / 180))],
+            [0.5 + 0.5 * Math.cos(18 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(18 * (Math.PI / 180))],
+            [0.5 + 0.25 * Math.cos(54 * (Math.PI / 180)), 0.5 + 0.25 * Math.sin(54 * (Math.PI / 180))],
+            [0.5 + 0.5 * Math.cos(90 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(90 * (Math.PI / 180))]
+            /* eslint-enable max-len */
+          ]
+        }, {
+          id: 'OT_arrow',
+          title: 'Arrow',
+          icon: [imageAssets, 'annotation-arrow.png'].join(''),
+          points: [
+            [0, 1],
+            [3, 1],
+            [3, 0],
+            [5, 2],
+            [3, 4],
+            [3, 3],
+            [0, 3],
+            [0, 1] // Reconnect point
+          ]
+        }, {
+          id: 'OT_line',
+          title: 'Line',
+          icon: [imageAssets, 'annotation-line.png'].join(''),
+          selectedIcon: [imageAssets, 'annotation-line.png'].join(''),
+          points: [
+            [0, 0],
+            [0, 1]
+          ]
+        }]
       }, {
-        id: 'OT_star',
-        title: 'Star',
-        icon: [imageAssets, 'annotation-star.png'].join(''),
-        points: [
-          /* eslint-disable max-len */
-          [0.5 + 0.5 * Math.cos(90 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(90 * (Math.PI / 180))],
-          [0.5 + 0.25 * Math.cos(126 * (Math.PI / 180)), 0.5 + 0.25 * Math.sin(126 * (Math.PI / 180))],
-          [0.5 + 0.5 * Math.cos(162 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(162 * (Math.PI / 180))],
-          [0.5 + 0.25 * Math.cos(198 * (Math.PI / 180)), 0.5 + 0.25 * Math.sin(198 * (Math.PI / 180))],
-          [0.5 + 0.5 * Math.cos(234 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(234 * (Math.PI / 180))],
-          [0.5 + 0.25 * Math.cos(270 * (Math.PI / 180)), 0.5 + 0.25 * Math.sin(270 * (Math.PI / 180))],
-          [0.5 + 0.5 * Math.cos(306 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(306 * (Math.PI / 180))],
-          [0.5 + 0.25 * Math.cos(342 * (Math.PI / 180)), 0.5 + 0.25 * Math.sin(342 * (Math.PI / 180))],
-          [0.5 + 0.5 * Math.cos(18 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(18 * (Math.PI / 180))],
-          [0.5 + 0.25 * Math.cos(54 * (Math.PI / 180)), 0.5 + 0.25 * Math.sin(54 * (Math.PI / 180))],
-          [0.5 + 0.5 * Math.cos(90 * (Math.PI / 180)), 0.5 + 0.5 * Math.sin(90 * (Math.PI / 180))]
-          /* eslint-enable max-len */
-        ]
-      }]
-    }, {
-      id: 'OT_text',
-      title: 'Text',
-      icon: [imageAssets, 'annotation-text.png'].join(''),
-      selectedIcon: [imageAssets, 'annotation-text.png'].join('')
-    }, {
-      id: 'OT_colors',
-      title: 'Colors',
-      icon: '',
-      items: { /* Built dynamically */ }
-    }, {
-      id: 'OT_line_width',
-      title: 'Line Width',
-      icon: [imageAssets, 'annotation-line_width.png'].join(''),
-      items: { /* Built dynamically */ }
-    }, {
-      id: 'OT_clear',
-      title: 'Clear',
-      icon: [imageAssets, 'annotation-clear.png'].join('')
-    }, {
-      id: 'OT_capture',
-      title: 'Capture',
-      icon: [imageAssets, 'annotation-camera.png'].join(''),
-      selectedIcon: [imageAssets, 'annotation-camera_selected.png'].join('')
-    }];
+        id: 'OT_text',
+        title: 'Text',
+        icon: [imageAssets, 'annotation-text.png'].join(''),
+        selectedIcon: [imageAssets, 'annotation-text.png'].join('')
+      }, {
+        id: 'OT_capture',
+        title: 'Capture',
+        icon: [imageAssets, 'annotation-camera.png'].join(''),
+        selectedIcon: [imageAssets, 'annotation-camera.png'].join('')
+      },{
+        id: 'OT_undo',
+        title: 'Undo',
+        icon: [imageAssets, 'annotation-undo.png'].join('')
+      },
+      {
+        id: 'OT_clear',
+        title: 'Clear',
+        icon: [imageAssets, 'annotation-clear.png'].join('')
+      }
+    ];
 
 
 
@@ -1252,24 +1311,33 @@
      * Otherwise, include all items.
      */
     var getItems = function () {
-      var itemNames = ['pen', 'line', 'shapes', 'text', 'colors', 'line-width', 'clear', 'capture'];
+      var itemNames = ['pen', 'colors', 'shapes', 'text', 'capture', 'undo', 'clear'];
+      var shapeNames = ['rectangle', 'rectangle-fill', 'oval', 'oval-fill', 'star', 'arrow', 'line'];
       var addItem = function (acc, item) {
         var index = itemNames.indexOf(item);
         if (index !== -1) {
-          acc.push(toolbarItems[index]);
+          var toolbarItem = toolbarItems[index];
+          if (toolbarItem.title === 'Shapes' && !!options.shapes) {
+            var shapes = options.shapes.reduce(function(shapeAcc, shape) {
+              var shapeIndex = shapeNames.indexOf(shape);
+              return shapeIndex !== -1 ? shapeAcc.concat(toolbarItem.items[shapeIndex]) : shapeAcc;
+            }, []);
+            toolbarItem.items = shapes;
+          }
+          acc.push(toolbarItem);
         }
         return acc;
       }
 
       if (!!options.items && !!options.items.length) {
-        return options.items.reduce(addItem, []);
+        var itemsToBuild = options.items[0] === '*' ? itemNames : options.items;
+        return itemsToBuild.reduce(addItem, []);
       } else {
         return toolbarItems;
       }
     }
 
     this.items = getItems();
-
 
     this.colors = options.colors || [
       '#1abc9c',
@@ -1317,9 +1385,9 @@
       var self = this;
       var context = _toolbar.externalWindow ? _toolbar.externalWindow.document : document;
 
-      this.getElm = function (el) {
+      this.getElm = function (el, all) {
         if (typeof el === 'string') {
-          return context.querySelector(el);
+          return all ? context.querySelectorAll(el) : context.querySelector(el);
         }
         return el;
       };
@@ -1336,11 +1404,14 @@
       };
 
       this.close = function () {
-        this.elm.style.display = 'none';
+        // this.elm.style.display = 'none';
+        this.elm.classList.add('ots-hidden');
       };
 
       this.open = function () {
-        this.elm.style.display = this.options.style.display;
+        // this.elm.style.display = this.options.style.display;
+        this.elm.classList.remove('ots-hidden')
+
       };
 
       this.colorChosen = function (cb) {
@@ -1361,7 +1432,7 @@
       options = options || {};
       options.openEvent = options.openEvent || 'click';
       options.style = Object(options.style);
-      options.style.display = options.style.display || 'block';
+      // options.style.display = options.style.display || 'block';
       options.template = options.template || '<div class=\"color-choice\" data-col=\"{color}\" style=\"background-color: {color}\"></div>';
       self.elm = self.getElm(parent);
       self.cbs = [];
@@ -1375,6 +1446,11 @@
         if (!color) {
           return;
         }
+        var colors = Array.from(self.getElm('.color-choice', true));
+        colors.forEach(function (el) {
+          el.classList.remove('active');
+        });
+        ev.target.classList.add('active');
         self.set(color);
         self.close();
       });
@@ -1393,8 +1469,6 @@
         panel.setAttribute('class', 'OT_panel');
         panel.style.width = '100%';
         panel.style.height = '100%';
-        panel.style.backgroundColor = this.backgroundColor;
-        // panel.style.paddingLeft = '15px';
         this.parent.appendChild(panel);
         this.parent.style.position = 'relative';
         this.parent.zIndex = 1000;
@@ -1408,17 +1482,14 @@
           var button = context.createElement('input');
           button.setAttribute('type', 'button');
           button.setAttribute('id', item.id);
-
-          button.style.position = 'relative';
-          button.style.top = '50%';
-          button.style.transform = 'translateY(-50%)';
+          button.classList.add('annotation-btn');
+          button.classList.add(item.title.split(' ').join('-').toLowerCase());
 
           if (item.id === 'OT_colors') {
-            button.style.webkitTransform = 'translateY(-85%)';
 
             var colorPicker = context.createElement('div');
             colorPicker.setAttribute('class', 'color-picker');
-            colorPicker.style.backgroundColor = this.backgroundColor;
+            // colorPicker.style.backgroundColor = this.subpanelBackgroundColor;
             this.parent.appendChild(colorPicker);
 
             var pk = new ColorPicker('.color-picker', this.colors, {
@@ -1435,41 +1506,14 @@
             });
 
             var colorChoices = context.querySelectorAll('.color-choice');
-
-            for (var j = 0; j < colorChoices.length; j++) {
-              colorChoices[j].style.display = 'inline-block';
-              colorChoices[j].style.width = '30px';
-              colorChoices[j].style.height = '30px';
-              colorChoices[j].style.margin = '5px';
-              colorChoices[j].style.cursor = 'pointer';
-              colorChoices[j].style.borderRadius = '100%';
-              colorChoices[j].style.opacity = 0.7;
-              colorChoices[j].onmouseover = function () {
-                this.style.opacity = 1;
-              };
-              colorChoices[j].onmouseout = function () {
-                this.style.opacity = 0.7;
-              };
-            }
-
-            button.setAttribute('class', 'OT_color');
-            button.style.marginLeft = '10px';
-            button.style.marginRight = '10px';
+            colorChoices[0].classList.add('active');
+            button.setAttribute('class', 'OT_color annotation-btn colors');
             button.style.borderRadius = '50%';
             button.style.backgroundColor = this.colors[0];
-            button.style.width = this.iconWidth;
-            button.style.height = this.iconHeight;
-            button.style.paddingTop = this.buttonHeight.replace('px', '') - this.iconHeight.replace('px', '') + 'px';
-          } else {
-            button.style.background = 'url("' + item.icon + '") no-repeat';
-            button.style.backgroundSize = this.iconWidth + ' ' + this.iconHeight;
-            button.style.backgroundPosition = 'center';
-            button.style.width = this.buttonWidth;
-            button.style.height = this.buttonHeight;
+
           }
 
-          // If we have an object as item.items, it was never set by the user
-          if (item.title === 'Line Width' && !Array.isArray(item.items)) {
+            if (item.title === 'Pen' && !Array.isArray(item.items)) {
             // Add defaults
             item.items = [{
               id: 'OT_line_width_2',
@@ -1508,8 +1552,7 @@
           }
 
           button.setAttribute('data-col', item.title);
-          button.style.border = 'none';
-          button.style.cursor = 'pointer';
+
 
           toolbarItems.push(button.outerHTML);
         }
@@ -1521,27 +1564,11 @@
           var itemName = ev.target.getAttribute('data-col');
           var id = ev.target.getAttribute('id');
 
+
           // Close the submenu if we are clicking on an item and not a group button
           if (!group) {
             self.items.forEach(function (item) {
-              if (item.title !== 'Clear' && item.title === itemName) {
-                if (self.selectedItem) {
-                  var lastBtn = context.getElementById(self.selectedItem.id);
-                  if (lastBtn) {
-                    lastBtn.style.background = 'url("' + self.selectedItem.icon + '") no-repeat';
-                    lastBtn.style.backgroundSize = self.iconWidth + ' ' + self.iconHeight;
-                    lastBtn.style.backgroundPosition = 'center';
-                  }
-                }
-
-                if (item.selectedIcon) {
-                  var selBtn = context.getElementById(item.id);
-                  if (selBtn) {
-                    selBtn.style.background = 'url("' + item.selectedIcon + '") no-repeat';
-                    selBtn.style.backgroundSize = self.iconWidth + ' ' + self.iconHeight;
-                    selBtn.style.backgroundPosition = 'center';
-                  }
-                }
+              if ((item.title !== 'Clear' || item.title !== 'Undo') && item.title === itemName) {
 
                 self.selectedItem = item;
 
@@ -1554,41 +1581,31 @@
                 return false;
               }
             });
-            subPanel.style.display = 'none';
+            subPanel.classList.add('ots-hidden')
           } else {
             self.items.forEach(function (item) {
               if (item.title === itemName) {
                 self.selectedGroup = item;
 
                 if (item.items) {
-                  subPanel.setAttribute('class', 'OT_subpanel');
-                  subPanel.style.backgroundColor = self.backgroundColor;
-                  subPanel.style.width = '100%';
-                  subPanel.style.height = '100%';
-                  subPanel.style.paddingLeft = '15px';
-                  subPanel.style.display = 'none';
+                  subPanel.setAttribute('class', ['OT_subpanel', 'ots-hidden', item.title.toLowerCase()].join(' '));
+
                   self.parent.appendChild(subPanel);
 
                   if (Array.isArray(item.items)) {
                     var submenuItems = [];
 
-                    if (item.id === 'OT_line_width') {
+                    if (item.id === 'OT_pen') {
                       // We want to dynamically create icons for the list of possible line widths
                       item.items.forEach(function (subItem) {
                         // INFO Using a div here - not input to create an inner div representing the line width - better option?
                         var itemButton = context.createElement('div');
                         itemButton.setAttribute('data-col', subItem.title);
+                        itemButton.setAttribute('class', ['line-width-option', subItem.size].join(' '));
                         itemButton.setAttribute('id', subItem.id);
-                        itemButton.style.position = 'relative';
-                        itemButton.style.top = '50%';
-                        itemButton.style.transform = 'translateY(-50%)';
-                        itemButton.style['float'] = 'left';
-                        itemButton.style.width = self.buttonWidth;
-                        itemButton.style.height = self.buttonHeight;
-                        itemButton.style.border = 'none';
-                        itemButton.style.cursor = 'pointer';
 
                         var lineIcon = context.createElement('div');
+                        lineIcon.setAttribute('class', 'line-width-icon')
                         // TODO Allow devs to change this?
                         lineIcon.style.backgroundColor = '#FFFFFF';
                         lineIcon.style.width = '80%';
@@ -1610,16 +1627,17 @@
                         itemButton.setAttribute('type', 'button');
                         itemButton.setAttribute('data-col', subItem.title);
                         itemButton.setAttribute('id', subItem.id);
-                        itemButton.style.background = 'url("' + subItem.icon + '") no-repeat';
-                        itemButton.style.position = 'relative';
-                        itemButton.style.top = '50%';
-                        itemButton.style.transform = 'translateY(-50%)';
-                        itemButton.style.backgroundSize = self.iconWidth + ' ' + self.iconHeight;
-                        itemButton.style.backgroundPosition = 'center';
-                        itemButton.style.width = self.buttonWidth;
-                        itemButton.style.height = self.buttonHeight;
-                        itemButton.style.border = 'none';
-                        itemButton.style.cursor = 'pointer';
+                        itemButton.setAttribute('class', ['annotation-btn', subItem.title.toLowerCase()].join(' '));
+                        // itemButton.style.backgroundImage = 'url("' + subItem.icon + '")';
+                        // itemButton.style.position = 'relative';
+                        // itemButton.style.top = '50%';
+                        // itemButton.style.transform = 'translateY(-50%)';
+                        // itemButton.style.backgroundSize = self.iconWidth + ' ' + self.iconHeight;
+                        // itemButton.style.backgroundPosition = 'center';
+                        // itemButton.style.width = self.buttonWidth;
+                        // itemButton.style.height = self.buttonHeight;
+                        // itemButton.style.border = 'none';
+                        // itemButton.style.cursor = 'pointer';
 
                         submenuItems.push(itemButton.outerHTML);
                       });
@@ -1629,14 +1647,14 @@
                   }
                 }
 
-                if (id === 'OT_shapes' || id === 'OT_line_width') {
+                if (id === 'OT_shapes' || id === 'OT_pen') {
                   if (subPanel) {
-                    subPanel.style.display = 'block';
+                    subPanel.classList.remove('ots-hidden');
                   }
                   pk.close();
                 } else if (id === 'OT_colors') {
                   if (subPanel) {
-                    subPanel.style.display = 'none';
+                    subPanel.classList.add('ots-hidden');
                   }
                   pk.open();
                 }
@@ -1653,7 +1671,15 @@
           var group = ev.target.getAttribute('data-type') === 'group';
           var itemName = ev.target.getAttribute('data-col');
           var id = ev.target.getAttribute('id');
-          subPanel.style.display = 'none';
+
+
+          if (!!id && id.replace(/[^a-z]/g, '') === 'linewidth') {
+            canvases.forEach(function (canvas) {
+              canvas.selectItem(self.selectedGroup);
+            });
+          }
+
+          subPanel.classList.add('ots-hidden');
 
           if (!group) {
             self.selectedGroup.items.forEach(function (item) {
@@ -1661,9 +1687,9 @@
                 if (self.selectedItem) {
                   var lastBtn = document.getElementById(self.selectedItem.id);
                   if (lastBtn) {
-                    lastBtn.style.background = 'url("' + self.selectedItem.icon + '") no-repeat';
-                    lastBtn.style.backgroundSize = self.iconWidth + ' ' + self.iconHeight;
-                    lastBtn.style.backgroundPosition = 'center';
+                    // lastBtn.style.background = 'url("' + self.selectedItem.icon + '") no-repeat';
+                    // lastBtn.style.backgroundSize = self.iconWidth + ' ' + self.iconHeight;
+                    // lastBtn.style.backgroundPosition = 'center';
                   }
                 }
 
@@ -1694,11 +1720,39 @@
           });
         };
 
-        context.getElementById('OT_clear').onclick = function () {
+        var onClear = context.getElementById('OT_clear').onclick = function () {
           canvases.forEach(function (canvas) {
             canvas.clear();
           });
         };
+
+        context.getElementById('OT_undo').onclick = function () {
+          canvases.forEach(function (canvas) {
+            canvas.undo();
+          });
+        };
+
+        window.addEventListener('OT_clear', function() {
+          onClear();
+          self.selectedItem = null;
+          canvases.forEach(function (canvas) {
+            canvas.selectItem(self.selectedItem);
+          });
+        });
+
+        window.addEventListener('OT_pen', function(evt) {
+          var item = self.items.find(function(item) {
+            return item.id === 'OT_pen';
+          });
+
+          self.selectedItem = item;
+          attachDefaultAction(item);
+          var color = evt.detail.color;
+          canvases.forEach(function (canvas) {
+            canvas.selectItem(self.selectedItem);
+            color && canvas.changeColor(color);
+          });
+        });
       }
     };
 
@@ -1766,6 +1820,9 @@
       canvas.link(self.session);
       canvas.colors(self.colors);
       canvases.push(canvas);
+      canvases.forEach(function(canvas) {
+        canvas.selectedItem = canvas.selectedItem || self.items[0];
+      });
     };
 
     /**
@@ -1811,7 +1868,6 @@
   };
 
 }.call(this));
-
 /* global OT OTSolution OTKAnalytics ScreenSharingAccPack define */
 (function () {
   /** Include external dependencies */
@@ -1843,7 +1899,7 @@
 
   // vars for the analytics logs. Internal use
   var _logEventData = {
-    clientVersion: 'js-vsol-1.0.0',
+    clientVersion: 'js-vsol-1.1.0',
     componentId: 'annotationsAccPack',
     name: 'guidAnnotationsKit',
     actionInitialize: 'Init',
@@ -1967,9 +2023,9 @@
       var el = _elements.absoluteParent || _elements.canvasContainer;
       width = el.clientWidth;
       height = width / (_aspectRatio);
-      if (el.clientHeight < (width/ _aspectRatio)) {
+      if (el.clientHeight < (width / _aspectRatio)) {
         height = el.clientHeight;
-        width  = height * _aspectRatio;
+        width = height * _aspectRatio;
       }
     }
 
@@ -1999,8 +2055,11 @@
   };
 
   var _createToolbar = function (session, options, externalWindow) {
+    _setupUI();
+
     var toolbarId = _.property('toolbarId')(options) || 'toolbar';
-    var items = _.property('toolbarItems')(options);
+    var items = _.property('toolbarItems')(options) || [];
+    var shapes = _.property('toolbarShapes')(options) || [];
     var colors = _.property('colors')(options) || _palette;
     var imageAssets = _.property('imageAssets')(options) || null;
     var backgroundColor = _.property('backgroundColor')(options) || null;
@@ -2015,7 +2074,8 @@
       session: session,
       container: container(),
       colors: colors,
-      items: !!items && !!items.length ? options.items : null,
+      items: items.length ? items : ['*'],
+      shapes: shapes.length ? shapes : ['rectangle', 'oval', 'star', 'line'],
       externalWindow: externalWindow || null,
       imageAssets: imageAssets,
       backgroundColor: backgroundColor,
@@ -2046,7 +2106,7 @@
 
     var width = screen.width * 0.80 | 0;
     var height = width / (_aspectRatio);
-    var externalWindowHTML = '<!DOCTYPE html><html lang="en"><head><meta http-equiv="Content-type" content="text/html; charset=utf-8"><title>OpenTok Screen Sharing Solution Annotation</title><style type="text/css" media="screen"> body{margin: 0; background-color: rgba(0, 153, 203, 0.7); box-sizing: border-box; height: 100vh;}canvas{top: 0; z-index: 1000;}.hidden{display: none;}.main-wrap{width: 100%; height: 100%; -ms-box-orient: horizontal; display: -webkit-box; display: -moz-box; display: -ms-flexbox; display: -moz-flex; display: -webkit-flex; display: flex; -webkit-justify-content: center; justify-content: center; -webkit-align-items: center; align-items: center;}.inner-wrap{position: relative; border-radius: 8px; overflow: hidden;}.fixed-container{position: fixed; top: 275px; right: 0; width: 40px; z-index: 1001;}.fixed-container .toolbar-wrap{position: absolute; top: 0; left: 0;}.fixed-container .toolbar-wrap input{display: block; top: 0 !important; transform: none !important;}.fixed-container .toolbar-wrap .OT_color{width: 30px; margin-right: 5px !important; margin-left: 5px !important; padding: 0;}.fixed-container .toolbar-wrap .OT_subpanel, .fixed-container .toolbar-wrap .color-picker{position: absolute; top: 0; right: 40px; padding-left: 0 !important; overflow: hidden;}.fixed-container .toolbar-wrap .OT_subpanel> div{top: 0 !important; transform: none !important;}.fixed-container .toolbar-wrap .color-picker{left: -30px;}.fixed-container .toolbar-wrap .color-picker .color-choice{display: block !important; height: 20px !important; width: 20px !important;}.publisherContainer{display: block; background-color: #000000; position: absolute;}.publisher-wrap{height: 100%; width: 100%;}.subscriberContainer{position: absolute; top: 20px; left: 20px; width: 200px; height: 120px; background-color: #000000; border: 2px solid white; border-radius: 6px;}.subscriberContainer .OT_video-poster{width: 100%; height: 100%; opacity: .25; background-repeat: no-repeat; background-image: url(https://static.opentok.com/webrtc/v2.8.2/images/rtc/audioonly-silhouette.svg); background-size: 50%; background-position: center;}.OT_video-element{height: 100%; width: 100%;}.OT_edge-bar-item{display: none;}</style></head><body> <div class="main-wrap"> <div id="annotationContainer" class="inner-wrap"></div></div><div id="toolbarContainer" class="fixed-container"> <div id="toolbar" class="toolbar-wrap"></div></div><div id="subscriberVideo" class="subscriberContainer hidden"></div><script type="text/javascript" charset="utf-8"> /** Must use double-quotes since everything must be converted to a string */ var opener; var canvas; if (!toolbar){alert("Something went wrong: You must pass an OpenTok annotation toolbar object into the window.")}else{opener=window.opener; window.onbeforeunload=window.triggerCloseEvent;}var localScreenProperties={insertMode: "append", width: "100%", height: "100%", videoSource: "window", showControls: false, style:{buttonDisplayMode: "off"}, subscribeToVideo: "true", subscribeToAudio: "false", fitMode: "contain"}; var createContainerElements=function(){var parentDiv=document.getElementById("annotationContainer"); var publisherContainer=document.createElement("div"); publisherContainer.setAttribute("id", "screenshare_publisher"); publisherContainer.classList.add("publisher-wrap"); parentDiv.appendChild(publisherContainer); return{annotation: parentDiv, publisher: publisherContainer};}; var addSubscriberVideo=function(stream){var container=document.getElementById("subscriberVideo"); var subscriber=session.subscribe(stream, container, localScreenProperties, function(error){if (error){console.log("Failed to add subscriber video", error);}container.classList.remove("hidden");});}; if (navigator.userAgent.indexOf("Firefox") !==-1){var ghost=window.open("about:blank"); ghost.focus(); ghost.close();}</script></body></html>';
+    var externalWindowHTML = '<!DOCTYPE html><html lang="en"><head><meta http-equiv="Content-type" content="text/html; charset=utf-8"><title>OpenTok Screen Sharing Solution Annotation</title><style type="text/css" media="screen"> body{margin:0;background-color:rgba(0,153,203,.7);box-sizing:border-box;height:100vh}canvas{top:0;z-index:1000}.hidden{display:none}.ots-hidden{display:none !important}.main-wrap{width:100%;height:100%;-ms-box-orient:horizontal;display:-webkit-box;display:-moz-box;display:-ms-flexbox;display:-moz-flex;display:-webkit-flex;display:flex;-webkit-justify-content:center;justify-content:center;-webkit-align-items:center;align-items:center}.inner-wrap{position:relative;border-radius:8px;overflow:hidden}.ots-annotation-toolbar-container{position:fixed;top:125px;right:0;width:60px;z-index:1000;background-color:#666}.ots-annotation-toolbar-container .OT_panel{display:flex;flex-direction:column;align-items:center}.ots-annotation-toolbar-container .annotation-btn{height:60px;width:60px;background-position:center center;background-repeat:no-repeat!important;background-color:#666;cursor:pointer;border:none}.ots-annotation-toolbar-container .annotation-btn.pen{background-image:url(https://assets.tokbox.com/solutions/images/annotation-pencil.png);background-size:27px 30px}.ots-annotation-toolbar-container .annotation-btn.colors{width:23px;height:24px;border:3px solid #fff;margin:18px 18.5px}.ots-annotation-toolbar-container .annotation-btn.line{background-image:url(https://assets.tokbox.com/solutions/images/annotation-line.png);background-size:26px 31px}.ots-annotation-toolbar-container .annotation-btn.line-width{background-image:url(https://assets.tokbox.com/solutions/images/annotation-line_width.png);background-size:26px 31px}.ots-annotation-toolbar-container .annotation-btn.shapes{background-image:url(https://assets.tokbox.com/solutions/images/annotation-shapes.png);background-size:26px 31px}.ots-annotation-toolbar-container .annotation-btn.text{background-image:url(https://assets.tokbox.com/solutions/images/annotation-text.png);background-size:21px 25px}.ots-annotation-toolbar-container .annotation-btn.capture{background-image:url(https://assets.tokbox.com/solutions/images/annotation-camera.png);background-size:34px 31px}.ots-annotation-toolbar-container .annotation-btn.clear{background-image:url(https://assets.tokbox.com/solutions/images/annotation-clear.png);background-size:31px 31px}.ots-annotation-toolbar-container .annotation-btn.undo{background-image:url(https://assets.tokbox.com/solutions/images/annotation-undo.png);background-size:34px 31px}.ots-annotation-toolbar-container .OT_subpanel,.ots-annotation-toolbar-container .color-picker{position:absolute;right:65px;width:40px;background-color:#333;display:flex;flex-direction:column;align-items:center;transition:opacity .5s ease-out}.ots-annotation-toolbar-container .OT_subpanel.pen{top:0}.ots-annotation-toolbar-container .OT_subpanel.pen .line-width-option{width:40px;height:40px;cursor:pointer}.ots-annotation-toolbar-container .OT_subpanel.pen:after,.ots-annotation-toolbar-container .color-picker:after{width:0;height:0;border-top:15px solid transparent;border-bottom:15px solid transparent;border-left:15px solid #333;right:-15px;content:"";position:absolute}.ots-annotation-toolbar-container .OT_subpanel.pen:after{top:15px}.ots-annotation-toolbar-container .color-picker{top:0}.ots-annotation-toolbar-container .color-picker:after{top:75px}.ots-annotation-toolbar-container .color-picker .color-choice{width:20px;height:20px;margin:10px;cursor:pointer;border-radius:100%}.ots-annotation-toolbar-container .color-picker .color-choice.active{border:2px solid #fff}.ots-annotation-toolbar-container .OT_subpanel.shapes{display:flex;flex-direction:column;top:75px;min-height:159.89px}.ots-annotation-toolbar-container .OT_subpanel.shapes:after{position:absolute;top:62.5px;right:-15px;content:"";width:0;height:0;border-top:15px solid transparent;border-bottom:15px solid transparent;border-left:15px solid #333}.ots-annotation-toolbar-container .OT_subpanel.shapes input{width:22px;height:22px;margin:9px;border:none;background-color:#333;background-repeat:no-repeat;background-position:center center}.ots-annotation-toolbar-container .OT_subpanel.shapes .annotation-btn.rectangle{background-image:url(https://assets.tokbox.com/solutions/images/annotation-rectangle.png);background-size:18px 18px}.ots-annotation-toolbar-container .OT_subpanel.shapes .annotation-btn.rectangle-fill{background-image:url(https://assets.tokbox.com/solutions/images/annotation-rectangle-fill.png);background-size:18px 18px}.ots-annotation-toolbar-container .OT_subpanel.shapes .annotation-btn.oval{background-image:url(https://assets.tokbox.com/solutions/images/annotation-oval.png);background-size:20px 20px}.ots-annotation-toolbar-container .OT_subpanel.shapes .annotation-btn.oval-fill{background-image:url(https://assets.tokbox.com/solutions/images/annotation-oval-fill.png);background-size:20px 20px}.ots-annotation-toolbar-container .OT_subpanel.shapes .annotation-btn.star{background-image:url(https://assets.tokbox.com/solutions/images/annotation-star.png);background-size:22px 22px}.ots-annotation-toolbar-container .OT_subpanel.shapes .annotation-btn.arrow{background-image:url(https://assets.tokbox.com/solutions/images/annotation-arrow.png);background-size:6.5px 23.5px}.publisherContainer{display:block;background-color:#000;position:absolute}.publisher-wrap{height:100%;width:100%}.subscriberContainer{position:absolute;top:20px;left:20px;width:200px;height:120px;background-color:#000;border:2px solid #fff;border-radius:6px}.subscriberContainer .OT_video-poster{width:100%;height:100%;opacity:.25;background-repeat:no-repeat;background-image:url(https://static.opentok.com/webrtc/v2.8.2/images/rtc/audioonly-silhouette.svg);background-size:50%;background-position:center}.OT_video-element{height:100%;width:100%}.OT_edge-bar-item{display:none}</style></head><body> <div class="main-wrap"> <div id="annotationContainer" class="inner-wrap"></div></div><div id="toolbarContainer" class="ots-annotation-toolbar-container"> <div id="toolbar" class="toolbar-wrap"></div></div><div id="subscriberVideo" class="subscriberContainer hidden"></div><script type="text/javascript" charset="utf-8"> /** Must use double-quotes since everything must be converted to a string */ var opener; var canvas; if (!toolbar){alert("Something went wrong: You must pass an OpenTok annotation toolbar object into the window.")}else{opener=window.opener; window.onbeforeunload=window.triggerCloseEvent;}var localScreenProperties={insertMode: "append", width: "100%", height: "100%", videoSource: "window", showControls: false, style:{buttonDisplayMode: "off"}, subscribeToVideo: "true", subscribeToAudio: "false", fitMode: "contain"}; var createContainerElements=function(){var parentDiv=document.getElementById("annotationContainer"); var publisherContainer=document.createElement("div"); publisherContainer.setAttribute("id", "screenshare_publisher"); publisherContainer.classList.add("publisher-wrap"); parentDiv.appendChild(publisherContainer); return{annotation: parentDiv, publisher: publisherContainer};}; var addSubscriberVideo=function(stream){var container=document.getElementById("subscriberVideo"); var subscriber=session.subscribe(stream, container, localScreenProperties, function(error){if (error){console.log("Failed to add subscriber video", error);}container.classList.remove("hidden");});}; if (navigator.userAgent.indexOf("Firefox") !==-1){var ghost=window.open("about:blank"); ghost.focus(); ghost.close();}</script></body></html>';
 
     /* eslint-disable max-len */
     var windowFeatures = [
@@ -2247,7 +2307,6 @@
     // init analytics logs
     _logAnalytics();
     _log(_logEventData.actionInitialize, _logEventData.variationSuccess);
-    _setupUI();
   };
 
   AnnotationAccPack.prototype = {

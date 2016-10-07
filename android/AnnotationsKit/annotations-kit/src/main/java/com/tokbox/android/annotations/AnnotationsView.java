@@ -148,7 +148,7 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
     /**
      * Annotations actions
      *
-     **/
+     */
     public enum Mode {
         Pen("otAnnotation_pen"),
         Clear("otAnnotation_clear"),
@@ -168,7 +168,7 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         }
     }
 
-    /*
+    /**
     * Constructor
     * @param context Application context
     * @param attrs A collection of attributes
@@ -178,12 +178,12 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         init();
     }
 
-    /*
+    /**
      * Constructor publisher annotations
      * @param context Application context
      * @param session The OpenTok Accelerator Pack session instance.
      * @param partnerId  The partner id - apiKey.
-     **/
+     */
     public AnnotationsView(Context context, AccPackSession session, String partnerId, boolean isScreensharing) throws Exception {
         super(context);
 
@@ -201,12 +201,12 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         init();
     }
 
-    /*
+    /**
     * Constructor publisher annotations
     * @param context Application context
     * @param session The OpenTok Accelerator Pack session instance.
     * @param partnerId  The partner id - apiKey.
-    **/
+    */
     public AnnotationsView(Context context, AccPackSession session, String partnerId, boolean isScreensharing, Publisher local) throws Exception {
         super(context);
 
@@ -225,12 +225,12 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         init();
     }
 
-    /*
+    /**
      * Constructor subscriber annotations
      * @param context Application context
      * @param session The OpenTok Accelerator Pack session instance.
      * @param partnerId  The partner id - apiKey.
-     **/
+     */
     public AnnotationsView(Context context, AccPackSession session, String partnerId, Subscriber remote) throws Exception {
         super(context);
         if ( session == null ) {
@@ -248,8 +248,8 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         init();
     }
 
-    /*
-     * Attach the Annotations Toolbar to the view
+    /**
+     * Attaches the Annotations Toolbar to the view
      * @param toolbar AnnotationsToolbar
      */
     public void attachToolbar(AnnotationsToolbar toolbar) throws Exception {
@@ -263,14 +263,17 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         addLogEvent(OpenTokConfig.LOG_ACTION_USE_TOOLBAR, OpenTokConfig.LOG_VARIATION_SUCCESS);
     }
 
+    /**
+     * Returns the AnnotationsToolbar
+     */
     public AnnotationsToolbar getToolbar() {
         return mToolbar;
     }
 
-    /*
-     * Set an AnnotationsVideoRenderer
+    /**
+     * Sets an AnnotationsVideoRenderer
      * @param videoRenderer AnnotationsVideoRenderer
-     **/
+     */
     public void setVideoRenderer(AnnotationsVideoRenderer videoRenderer) throws Exception {
         if ( videoRenderer == null ) {
             throw new Exception("VideoRenderer cannot be null");
@@ -278,17 +281,26 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         this.videoRenderer = videoRenderer;
     }
 
+    /**
+    * Returns the AnnotationsVideoRenderer
+    */
     public AnnotationsVideoRenderer getVideoRenderer() {
         return videoRenderer;
     }
 
-
-    /*
-     * Set AnnotationsListener
+    /**
+     * Sets AnnotationsListener
      * @param listener AnnotationsListener
-     **/
+     */
     public void setAnnotationsListener(AnnotationsListener listener) {
         this.mListener = listener;
+    }
+
+    /**
+    * Restarts the AnnotationsView. Clear all the annotations.
+    */
+    public void restart(){
+        clearAll(false, mSession.getConnection().getConnectionId());
     }
 
     @Override
@@ -296,6 +308,37 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
 
         super.onConfigurationChanged(newConfig);
         resize();
+    }
+
+    private void init(){
+        String source = getContext().getPackageName();
+
+        SharedPreferences prefs = getContext().getSharedPreferences("opentok", Context.MODE_PRIVATE);
+        String guidVSol = prefs.getString("guidVSol", null);
+        if (null == guidVSol) {
+            guidVSol = UUID.randomUUID().toString();
+            prefs.edit().putString("guidVSol", guidVSol).commit();
+        }
+
+        //init analytics
+        mAnalyticsData = new OTKAnalyticsData.Builder(OpenTokConfig.LOG_CLIENT_VERSION, source, OpenTokConfig.LOG_COMPONENTID, guidVSol).build();
+        mAnalytics = new OTKAnalytics(mAnalyticsData);
+        if ( mSession != null ) {
+            mAnalyticsData.setSessionId(mSession.getSessionId());
+            mAnalyticsData.setConnectionId(mSession.getConnection().getConnectionId());
+        }
+        if ( mPartnerId != null ) {
+            mAnalyticsData.setPartnerId(mPartnerId);
+        }
+        mAnalytics. setData(mAnalyticsData);
+
+        setWillNotDraw(false);
+        mAnnotationsManager = new AnnotationsManager();
+        mCurrentColor = getResources().getColor(R.color.picker_color_orange);
+        mSelectedColor = mCurrentColor;
+        this.setVisibility(View.GONE);
+
+        addLogEvent(OpenTokConfig.LOG_ACTION_INITIALIZE, OpenTokConfig.LOG_VARIATION_SUCCESS);
     }
 
     private void resize(){
@@ -376,8 +419,8 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         }
 
         return screenHeight;
-
     }
+
     private int getDisplayWidth(){
         final WindowManager windowManager = (WindowManager) getContext()
                 .getSystemService(Context.WINDOW_SERVICE);
@@ -392,9 +435,9 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
             Display d = windowManager.getDefaultDisplay();
             screenWidth = d.getWidth();
         }
-
         return screenWidth;
     }
+
     private int getStatusBarHeight() {
         int result = 0;
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
@@ -435,251 +478,11 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
             Display d = windowManager.getDefaultDisplay();
             screenHeight = d.getHeight();
         }
-
-        //return screenHeight;
         return (screenHeight - contentTop - actionBarHeight);
-    }
-    private void init(){
-        String source = getContext().getPackageName();
-
-        SharedPreferences prefs = getContext().getSharedPreferences("opentok", Context.MODE_PRIVATE);
-        String guidVSol = prefs.getString("guidVSol", null);
-        if (null == guidVSol) {
-            guidVSol = UUID.randomUUID().toString();
-            prefs.edit().putString("guidVSol", guidVSol).commit();
-        }
-
-        //init analytics
-        mAnalyticsData = new OTKAnalyticsData.Builder(OpenTokConfig.LOG_CLIENT_VERSION, source, OpenTokConfig.LOG_COMPONENTID, guidVSol).build();
-        mAnalytics = new OTKAnalytics(mAnalyticsData);
-        if ( mSession != null ) {
-            mAnalyticsData.setSessionId(mSession.getSessionId());
-            mAnalyticsData.setConnectionId(mSession.getConnection().getConnectionId());
-        }
-        if ( mPartnerId != null ) {
-            mAnalyticsData.setPartnerId(mPartnerId);
-        }
-        mAnalytics. setData(mAnalyticsData);
-
-        setWillNotDraw(false);
-        mAnnotationsManager = new AnnotationsManager();
-        mCurrentColor = getResources().getColor(R.color.picker_color_orange);
-        mSelectedColor = mCurrentColor;
-        this.setVisibility(View.GONE);
-
-        addLogEvent(OpenTokConfig.LOG_ACTION_INITIALIZE, OpenTokConfig.LOG_VARIATION_SUCCESS);
-    }
-
-
-    /**
-     * ==== Touch Events ====
-     **/
-
-    @Override
-    public boolean onInterceptTouchEvent(MotionEvent ev) {
-        return true;
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        this.loaded = false;
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-    }
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        final float x = event.getX();
-        final float y = event.getY();
-
-        if (  mode != null ) {
-            mCurrentColor = mSelectedColor;
-            if (mode == Mode.Pen) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN: {
-                        mAnnotationsActive = true;
-                        createPathAnnotatable(false);
-                        beginTouch(x, y);
-                        mCurrentPath.addPoint(new PointF(x,y));
-                        sendAnnotation(mode.toString(), buildSignalFromPoint(x,y, true, false));
-                        invalidate();
-                        addLogEvent(OpenTokConfig.LOG_ACTION_START_DRAWING, OpenTokConfig.LOG_VARIATION_SUCCESS);
-                    }
-                    break;
-                    case MotionEvent.ACTION_MOVE: {
-                        moveTouch(x, y, true);
-
-                        sendAnnotation(mode.toString(), buildSignalFromPoint(x,y, false, false));
-                        mCurrentPath.addPoint(new PointF(x,y));
-                        invalidate();
-                    }
-                    break;
-                    case MotionEvent.ACTION_UP: {
-                        upTouch();
-                        sendAnnotation(mode.toString(), buildSignalFromPoint(x,y, false, true));
-                        try {
-                            addAnnotatable(mSession.getConnection().getConnectionId());
-
-                        }catch (Exception e){
-                            Log.e(LOG_TAG, e.toString());
-                        }
-                        mAnnotationsActive = false;
-                        invalidate();
-                        addLogEvent(OpenTokConfig.LOG_ACTION_END_DRAWING, OpenTokConfig.LOG_VARIATION_SUCCESS);
-                    }
-                    break;
-                }
-
-                addLogEvent(OpenTokConfig.LOG_ACTION_FREEHAND, OpenTokConfig.LOG_VARIATION_SUCCESS);
-            } else {
-                if (mode == Mode.Text) {
-                    final String myString;
-
-                    mAnnotationsActive = true;
-
-                    EditText editText = new EditText(getContext());
-                    editText.setVisibility(VISIBLE);
-                    editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-
-                    // Add whatever you want as size
-                    int editTextHeight = 70;
-                    int editTextWidth = 200;
-
-                    RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(editTextWidth, editTextHeight);
-
-                    //You could adjust the position
-                    params.topMargin = (int) (event.getRawY());
-                    params.leftMargin = (int) (event.getRawX());
-                    this.addView(editText, params);
-                    editText.setVisibility(VISIBLE);
-                    editText.setSingleLine();
-                    editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-                    editText.requestFocus();
-                    editText.setTextSize(mTextSize);
-
-                    InputMethodManager imm = (InputMethodManager) getContext().getSystemService(getContext().INPUT_METHOD_SERVICE);
-                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
-
-                    createTextAnnotatable(editText, x, y);
-
-                    editText.addTextChangedListener(new TextWatcher() {
-
-                        @Override
-                        public void onTextChanged(CharSequence s, int start, int before,
-                                                  int count) {
-                            drawText();
-
-                            if (count == 1){
-                                //start text is true
-                                sendAnnotation(mode.toString(), buildSignalFromText(x, y, s.toString(), true, false));
-                            }
-                            else {
-                                sendAnnotation(mode.toString(), buildSignalFromText(x, y, s.toString(), false, false));
-                            }
-                        }
-
-                        @Override
-                        public void afterTextChanged(Editable s) {
-                            // TODO Auto-generated method stub
-                        }
-
-                        @Override
-                        public void beforeTextChanged(CharSequence s, int start, int count,
-                                                      int after) {
-                            // TODO Auto-generated method stub
-                        }
-
-                    });
-
-                    editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-                        @Override
-                        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                                InputMethodManager imm = (InputMethodManager) v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                                imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
-                                sendAnnotation(mode.toString(), buildSignalFromText(x, y, mCurrentText.getEditText().getText().toString(), false, true));
-
-                                //Create annotatable text and add it to the canvas
-                                mAnnotationsActive = false;
-
-                                try {
-                                    addAnnotatable(mSession.getConnection().getConnectionId());
-
-                                }catch (Exception e){
-                                    Log.e(LOG_TAG, e.toString());
-                                }
-
-                                mCurrentText = null;
-                                invalidate();
-                                return true;
-                            }
-                            return false;
-                        }
-                    });
-
-                    addLogEvent(OpenTokConfig.LOG_ACTION_TEXT, OpenTokConfig.LOG_VARIATION_SUCCESS);
-                }
-            }
-        }
-        return true;
     }
 
     private void drawText() {
         invalidate();
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-
-        if (mAnnotationsActive) {
-            if (mCurrentText != null && mCurrentText.getEditText() != null && !mCurrentText.getEditText().getText().toString().isEmpty()) {
-                TextPaint textpaint = new TextPaint(mCurrentPaint);
-                String text = mCurrentText.getEditText().getText().toString();
-                Paint borderPaint = new Paint();
-                borderPaint.setStyle(Paint.Style.STROKE);
-                borderPaint.setStrokeWidth(5);
-
-                Rect result = new Rect();
-                mCurrentPaint.getTextBounds(text, 0, text.length(), result);
-
-                if (text.length() > 10) {
-                    String[] strings = text.split("(?<=\\G.{" + 10 + "})");
-
-                    float x = mCurrentText.getX();
-                    float y = 340;
-                    canvas.drawRect(x, y - result.height() - 20 + (strings.length * 50), x + result.width() + 20, y, borderPaint);
-
-                    for (int i = 0; i < strings.length; i++) {
-
-                        canvas.drawText(strings[i], x, y, mCurrentPaint);
-
-                        y = y + 50;
-                    }
-                } else {
-                    canvas.drawRect(mCurrentText.getX(), 340 - result.height() - 20, mCurrentText.getX() + result.width() + 20, 340, borderPaint);
-                    canvas.drawText(mCurrentText.getEditText().getText().toString(), mCurrentText.getX(), 340, mCurrentPaint);
-
-                }
-            }
-            if ( mCurrentPath != null ) {
-                canvas.drawPath(mCurrentPath, mCurrentPaint);
-            }
-        }
-
-        for (Annotatable drawing : mAnnotationsManager.getAnnotatableList()) {
-            if (drawing.getType().equals(Annotatable.AnnotatableType.PATH)) {
-                canvas.drawPath(drawing.getPath(), drawing.getPaint());
-            }
-
-            if (drawing.getType().equals(Annotatable.AnnotatableType.TEXT)) {
-                canvas.drawText(drawing.getText().getEditText().getText().toString(), drawing.getText().x, drawing.getText().y, drawing.getPaint());
-            }
-        }
-
     }
 
     private void beginTouch(float x, float y) {
@@ -720,9 +523,6 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         }
     }
 
-    public void restart(){
-        clearAll(false, mSession.getConnection().getConnectionId());
-    }
     private void clearAll(boolean incoming, String cid){
 
         if (mAnnotationsManager.getAnnotatableList().size() > 0) {
@@ -764,11 +564,6 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         }
     }
 
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-    }
-
     private void createTextAnnotatable(EditText editText, float x, float y) {
         Log.i(LOG_TAG, "Create Text Annotatable");
         mCurrentPaint = new Paint();
@@ -795,96 +590,23 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
         Log.i(LOG_TAG, "Add Annotatable");
         if (mode != null) {
             if (mode.equals(Mode.Pen)) {
-                mCurrentAnnotatable = new Annotatable(mode, mCurrentPath, mCurrentPaint, width, height, cid);
+                mCurrentAnnotatable = new Annotatable(mode, mCurrentPath, mCurrentPaint, cid);
                 mCurrentAnnotatable.setType(Annotatable.AnnotatableType.PATH);
             } else {
-                mCurrentAnnotatable = new Annotatable(mode, mCurrentText, mCurrentPaint, width, height, cid);
+                mCurrentAnnotatable = new Annotatable(mode, mCurrentText, mCurrentPaint, cid);
                 mCurrentAnnotatable.setType(Annotatable.AnnotatableType.TEXT);
             }
             mAnnotationsManager.addAnnotatable(mCurrentAnnotatable);
         }
     }
 
-    @Override
-    public void onItemSelected(View v, boolean selected) {
-
-        if (v.getId() == R.id.done) {
-            mode = Mode.Done;
-            clearAll(false, mSession.getConnection().getConnectionId());
-            this.setVisibility(GONE);
-            mListener.onAnnotationsDone();
-            addLogEvent(OpenTokConfig.LOG_ACTION_DONE, OpenTokConfig.LOG_VARIATION_SUCCESS);
-        }
-        if (v.getId() == R.id.erase) {
-            mode = Mode.Clear;
-            clearCanvas(false, mSession.getConnection().getConnectionId());
-
-            addLogEvent(OpenTokConfig.LOG_ACTION_ERASE, OpenTokConfig.LOG_VARIATION_SUCCESS);
-        }
-        if (v.getId() == R.id.screenshot) {
-            //screenshot capture
-            mode = Mode.Capture;
-            if (videoRenderer != null) {
-                Bitmap bmp = videoRenderer.captureScreenshot();
-
-                if (bmp != null) {
-
-                    if (mListener != null) {
-                        mListener.onScreencaptureReady(bmp);
-                    }
-
-                    addLogEvent(OpenTokConfig.LOG_ACTION_SCREENCAPTURE, OpenTokConfig.LOG_VARIATION_SUCCESS);
-                }
-            }
-        }
-        if (selected){
-            this.setVisibility(VISIBLE);
-
-            if (v.getId() == R.id.picker_color ){
-                mode = Mode.Color;
-                this.mToolbar.bringToFront();
-            }
-            else {
-                if (v.getId() == R.id.type_tool) {
-                    //type text
-                    mode = Mode.Text;
-                }
-                if (v.getId() == R.id.draw_freehand) {
-                    //freehand lines
-                    mode = Mode.Pen;
-                }
-            }
-        }
-        else {
-            mode = null;
-        }
-
-        if (!loaded){
-            resize();
-            loaded = true;
-        }
-
-        if ( mode != null ) {
-            mListener.onAnnotationsSelected(mode);
-        }
-
-    }
-
     private Bitmap getScreenshot(){
-        //View v1 = ((Activity)mContext).getWindow().getDecorView().getRootView();
         View v1 = mContentView;
         v1.setDrawingCacheEnabled(true);
         Bitmap bitmap = Bitmap.createBitmap(v1.getDrawingCache());
         v1.setDrawingCacheEnabled(false);
 
         return bitmap;
-    }
-
-    @Override
-    public void onColorSelected(int color) {
-        this.mCurrentColor = color;
-        mSelectedColor = color;
-        addLogEvent(OpenTokConfig.LOG_ACTION_PICKER_COLOR, OpenTokConfig.LOG_VARIATION_SUCCESS);
     }
 
     private void sendAnnotation(String type, String annotation) {
@@ -985,51 +707,6 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
 
         return jsonArray.toString();
     }
-
-
-    @Override
-    public void onSignalReceived(Session session, String type, String data, Connection connection) {
-        mType = type;
-        String mycid = session.getConnection().getConnectionId();
-        String cid = connection.getConnectionId();
-
-        if (!cid.equals(mycid)) { // Ensure that we only handle signals from other users on the current canvas
-            if (type.contains(SIGNAL_TYPE)) {
-                this.setVisibility(VISIBLE);
-                if (!loaded){
-                    resize();
-                    loaded = true;
-                }
-
-                if (type.contains(Mode.Pen.toString())) {
-                    Log.i(LOG_TAG, "New pen annotations is received");
-                    penAnnotations(connection, data);
-                } else {
-                    if (type.equalsIgnoreCase(Mode.Clear.toString())) {
-                        Log.i(LOG_TAG, "New clear annotations is received");
-                        mode = Mode.Clear;
-                        clearCanvas(true, connection.getConnectionId());
-                    } else {
-                        if (type.equalsIgnoreCase(Mode.Done.toString())) {
-                            Log.i(LOG_TAG, "New done annotations is received");
-                            mode = Mode.Done;
-                            clearAll(true, connection.getConnectionId());
-                        } else {
-                            if (type.equalsIgnoreCase(Mode.Text.toString())) {
-                                Log.i(LOG_TAG, "New text annotations is received");
-                                try {
-                                    textAnnotation(connection, data);
-                                }catch (Exception e) {
-                                    Log.e(LOG_TAG, e.toString());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 
     private void penAnnotations(Connection connection, String data) {
         mode = Mode.Pen;
@@ -1367,6 +1044,332 @@ public class AnnotationsView extends ViewGroup implements AnnotationsToolbar.Act
     private void addLogEvent(String action, String variation){
         if ( mAnalytics!= null ) {
             mAnalytics.logEvent(action, variation);
+        }
+    }
+
+    /**
+     * ==== Touch Events ====
+     **/
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        return true;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        this.loaded = false;
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        final float x = event.getX();
+        final float y = event.getY();
+
+        if (  mode != null ) {
+            mCurrentColor = mSelectedColor;
+            if (mode == Mode.Pen) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN: {
+                        mAnnotationsActive = true;
+                        createPathAnnotatable(false);
+                        beginTouch(x, y);
+                        mCurrentPath.addPoint(new PointF(x,y));
+                        sendAnnotation(mode.toString(), buildSignalFromPoint(x,y, true, false));
+                        invalidate();
+                        addLogEvent(OpenTokConfig.LOG_ACTION_START_DRAWING, OpenTokConfig.LOG_VARIATION_SUCCESS);
+                    }
+                    break;
+                    case MotionEvent.ACTION_MOVE: {
+                        moveTouch(x, y, true);
+
+                        sendAnnotation(mode.toString(), buildSignalFromPoint(x,y, false, false));
+                        mCurrentPath.addPoint(new PointF(x,y));
+                        invalidate();
+                    }
+                    break;
+                    case MotionEvent.ACTION_UP: {
+                        upTouch();
+                        sendAnnotation(mode.toString(), buildSignalFromPoint(x,y, false, true));
+                        try {
+                            addAnnotatable(mSession.getConnection().getConnectionId());
+
+                        }catch (Exception e){
+                            Log.e(LOG_TAG, e.toString());
+                        }
+                        mAnnotationsActive = false;
+                        invalidate();
+                        addLogEvent(OpenTokConfig.LOG_ACTION_END_DRAWING, OpenTokConfig.LOG_VARIATION_SUCCESS);
+                    }
+                    break;
+                }
+
+                addLogEvent(OpenTokConfig.LOG_ACTION_FREEHAND, OpenTokConfig.LOG_VARIATION_SUCCESS);
+            } else {
+                if (mode == Mode.Text) {
+                    final String myString;
+
+                    mAnnotationsActive = true;
+
+                    EditText editText = new EditText(getContext());
+                    editText.setVisibility(VISIBLE);
+                    editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+
+                    // Add whatever you want as size
+                    int editTextHeight = 70;
+                    int editTextWidth = 200;
+
+                    RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(editTextWidth, editTextHeight);
+
+                    //You could adjust the position
+                    params.topMargin = (int) (event.getRawY());
+                    params.leftMargin = (int) (event.getRawX());
+                    this.addView(editText, params);
+                    editText.setVisibility(VISIBLE);
+                    editText.setSingleLine();
+                    editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+                    editText.requestFocus();
+                    editText.setTextSize(mTextSize);
+
+                    InputMethodManager imm = (InputMethodManager) getContext().getSystemService(getContext().INPUT_METHOD_SERVICE);
+                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
+
+                    createTextAnnotatable(editText, x, y);
+
+                    editText.addTextChangedListener(new TextWatcher() {
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before,
+                                                  int count) {
+                            drawText();
+
+                            if (count == 1){
+                                //start text is true
+                                sendAnnotation(mode.toString(), buildSignalFromText(x, y, s.toString(), true, false));
+                            }
+                            else {
+                                sendAnnotation(mode.toString(), buildSignalFromText(x, y, s.toString(), false, false));
+                            }
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            // TODO Auto-generated method stub
+                        }
+
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count,
+                                                      int after) {
+                            // TODO Auto-generated method stub
+                        }
+
+                    });
+
+                    editText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+                        @Override
+                        public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                                InputMethodManager imm = (InputMethodManager) v.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                                imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                                sendAnnotation(mode.toString(), buildSignalFromText(x, y, mCurrentText.getEditText().getText().toString(), false, true));
+
+                                //Create annotatable text and add it to the canvas
+                                mAnnotationsActive = false;
+
+                                try {
+                                    addAnnotatable(mSession.getConnection().getConnectionId());
+
+                                }catch (Exception e){
+                                    Log.e(LOG_TAG, e.toString());
+                                }
+
+                                mCurrentText = null;
+                                invalidate();
+                                return true;
+                            }
+                            return false;
+                        }
+                    });
+
+                    addLogEvent(OpenTokConfig.LOG_ACTION_TEXT, OpenTokConfig.LOG_VARIATION_SUCCESS);
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        if (mAnnotationsActive) {
+            if (mCurrentText != null && mCurrentText.getEditText() != null && !mCurrentText.getEditText().getText().toString().isEmpty()) {
+                TextPaint textpaint = new TextPaint(mCurrentPaint);
+                String text = mCurrentText.getEditText().getText().toString();
+                Paint borderPaint = new Paint();
+                borderPaint.setStyle(Paint.Style.STROKE);
+                borderPaint.setStrokeWidth(5);
+
+                Rect result = new Rect();
+                mCurrentPaint.getTextBounds(text, 0, text.length(), result);
+
+                if (text.length() > 10) {
+                    String[] strings = text.split("(?<=\\G.{" + 10 + "})");
+
+                    float x = mCurrentText.getX();
+                    float y = 340;
+                    canvas.drawRect(x, y - result.height() - 20 + (strings.length * 50), x + result.width() + 20, y, borderPaint);
+
+                    for (int i = 0; i < strings.length; i++) {
+
+                        canvas.drawText(strings[i], x, y, mCurrentPaint);
+
+                        y = y + 50;
+                    }
+                } else {
+                    canvas.drawRect(mCurrentText.getX(), 340 - result.height() - 20, mCurrentText.getX() + result.width() + 20, 340, borderPaint);
+                    canvas.drawText(mCurrentText.getEditText().getText().toString(), mCurrentText.getX(), 340, mCurrentPaint);
+
+                }
+            }
+            if ( mCurrentPath != null ) {
+                canvas.drawPath(mCurrentPath, mCurrentPaint);
+            }
+        }
+
+        for (Annotatable drawing : mAnnotationsManager.getAnnotatableList()) {
+            if (drawing.getType().equals(Annotatable.AnnotatableType.PATH)) {
+                canvas.drawPath(drawing.getPath(), drawing.getPaint());
+            }
+
+            if (drawing.getType().equals(Annotatable.AnnotatableType.TEXT)) {
+                canvas.drawText(drawing.getText().getEditText().getText().toString(), drawing.getText().x, drawing.getText().y, drawing.getPaint());
+            }
+        }
+
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+    }
+
+    @Override
+    public void onItemSelected(View v, boolean selected) {
+
+        if (v.getId() == R.id.done) {
+            mode = Mode.Done;
+            clearAll(false, mSession.getConnection().getConnectionId());
+            this.setVisibility(GONE);
+            mListener.onAnnotationsDone();
+            addLogEvent(OpenTokConfig.LOG_ACTION_DONE, OpenTokConfig.LOG_VARIATION_SUCCESS);
+        }
+        if (v.getId() == R.id.erase) {
+            mode = Mode.Clear;
+            clearCanvas(false, mSession.getConnection().getConnectionId());
+
+            addLogEvent(OpenTokConfig.LOG_ACTION_ERASE, OpenTokConfig.LOG_VARIATION_SUCCESS);
+        }
+        if (v.getId() == R.id.screenshot) {
+            //screenshot capture
+            mode = Mode.Capture;
+            if (videoRenderer != null) {
+                Bitmap bmp = videoRenderer.captureScreenshot();
+
+                if (bmp != null) {
+
+                    if (mListener != null) {
+                        mListener.onScreencaptureReady(bmp);
+                    }
+
+                    addLogEvent(OpenTokConfig.LOG_ACTION_SCREENCAPTURE, OpenTokConfig.LOG_VARIATION_SUCCESS);
+                }
+            }
+        }
+        if (selected){
+            this.setVisibility(VISIBLE);
+
+            if (v.getId() == R.id.picker_color ){
+                mode = Mode.Color;
+                this.mToolbar.bringToFront();
+            }
+            else {
+                if (v.getId() == R.id.type_tool) {
+                    //type text
+                    mode = Mode.Text;
+                }
+                if (v.getId() == R.id.draw_freehand) {
+                    //freehand lines
+                    mode = Mode.Pen;
+                }
+            }
+        }
+        else {
+            mode = null;
+        }
+
+        if (!loaded){
+            resize();
+            loaded = true;
+        }
+
+        if ( mode != null ) {
+            mListener.onAnnotationsSelected(mode);
+        }
+    }
+
+    @Override
+    public void onColorSelected(int color) {
+        this.mCurrentColor = color;
+        mSelectedColor = color;
+        addLogEvent(OpenTokConfig.LOG_ACTION_PICKER_COLOR, OpenTokConfig.LOG_VARIATION_SUCCESS);
+    }
+
+    @Override
+    public void onSignalReceived(Session session, String type, String data, Connection connection) {
+        mType = type;
+        String mycid = session.getConnection().getConnectionId();
+        String cid = connection.getConnectionId();
+
+        if (!cid.equals(mycid)) { // Ensure that we only handle signals from other users on the current canvas
+            if (type.contains(SIGNAL_TYPE)) {
+                this.setVisibility(VISIBLE);
+                if (!loaded){
+                    resize();
+                    loaded = true;
+                }
+
+                if (type.contains(Mode.Pen.toString())) {
+                    Log.i(LOG_TAG, "New pen annotations is received");
+                    penAnnotations(connection, data);
+                } else {
+                    if (type.equalsIgnoreCase(Mode.Clear.toString())) {
+                        Log.i(LOG_TAG, "New clear annotations is received");
+                        mode = Mode.Clear;
+                        clearCanvas(true, connection.getConnectionId());
+                    } else {
+                        if (type.equalsIgnoreCase(Mode.Done.toString())) {
+                            Log.i(LOG_TAG, "New done annotations is received");
+                            mode = Mode.Done;
+                            clearAll(true, connection.getConnectionId());
+                        } else {
+                            if (type.equalsIgnoreCase(Mode.Text.toString())) {
+                                Log.i(LOG_TAG, "New text annotations is received");
+                                try {
+                                    textAnnotation(connection, data);
+                                }catch (Exception e) {
+                                    Log.e(LOG_TAG, e.toString());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

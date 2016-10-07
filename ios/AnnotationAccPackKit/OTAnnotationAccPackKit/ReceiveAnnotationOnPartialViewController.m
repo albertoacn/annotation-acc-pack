@@ -42,10 +42,13 @@
                                      [self.annotator connectForReceivingAnnotationWithSize:self.yellowView.bounds.size completionHandler:^(OTAnnotationSignal signal, NSError *error) {
                                          if (signal == OTAnnotationSessionDidConnect){
                                              self.annotator.annotationScrollView.frame = self.yellowView.bounds;
-                                             self.annotator.annotationScrollView.scrollView.contentSize = self.yellowView.bounds.size;
                                              [self.yellowView addSubview:self.annotator.annotationScrollView];
                                          }
                                      }];
+                                     
+                                     self.annotator.dataReceivingHandler = ^(NSArray *data) {
+                                         NSLog(@"%@", data);
+                                     };
                                  }
                              }
                          }];

@@ -40,27 +40,35 @@
                                      self.sharer.publishAudio = NO;
                                      self.sharer.subscribeToAudio = NO;
                                  }
-                                 else if (signal == OTScreenShareSignalSubscriberConnect) {
+                                 else if (signal == OTScreenShareSignalSubscriberDidConnect) {
                                      
                                      [self.sharer.subscriberView removeFromSuperview];
                                      self.sharer.subscriberView.frame = CGRectMake(0, 0, self.sharer.subscriberVideoDimension.width, self.sharer.subscriberVideoDimension.height);
                                      
                                      // connect for annotation
                                      self.annotator = [[OTAnnotator alloc] init];
-                                     [self.annotator connectForSendingAnnotationWithSize:self.sharer.subscriberView.frame.size completionHandler:^(OTAnnotationSignal signal, NSError *error) {
+                                     [self.annotator connectForSendingAnnotationWithSize:self.sharer.subscriberView.frame.size
+                                                                       completionHandler:^(OTAnnotationSignal signal, NSError *error) {
                                          
-                                         if (signal == OTAnnotationSessionDidConnect){
+                                                                           if (signal == OTAnnotationSessionDidConnect){
                                              
-                                             // configure annotation view
-                                             self.annotator.annotationScrollView.frame = self.view.bounds;
-                                             [self.view addSubview:self.annotator.annotationScrollView];
-                                             [self.annotator.annotationScrollView addContentView:self.sharer.subscriberView];
-                                             
-                                             // configure annotation feature
-                                             self.annotator.annotationScrollView.annotatable = YES;
-                                             self.annotator.annotationScrollView.annotationView.currentAnnotatable = [OTAnnotationPath pathWithStrokeColor:[UIColor yellowColor]];
-                                         }
-                                     }];
+                                                                               // configure annotation view
+                                                                               self.annotator.annotationScrollView.frame = self.view.bounds;
+                                                                               [self.view addSubview:self.annotator.annotationScrollView];
+                                                                               
+                                                                               // self.sharer.subscriberView is the screen shared from a remote client.
+                                                                               // It does not make sense to `connectForSendingAnnotationWithSize` if you don't receive a screen sharing.
+                                                                               [self.annotator.annotationScrollView addContentView:self.sharer.subscriberView];
+                                                                               
+                                                                               // configure annotation feature
+                                                                               self.annotator.annotationScrollView.annotatable = YES;
+                                                                               self.annotator.annotationScrollView.annotationView.currentAnnotatable = [OTAnnotationPath pathWithStrokeColor:[UIColor yellowColor]];
+                                                                           }
+                                                                       }];
+                                     
+                                     self.annotator.dataSendingHandler = ^(NSArray *data, NSError *error) {
+                                         NSLog(@"%@", data);
+                                     };
                                  }
                              }
                          }];

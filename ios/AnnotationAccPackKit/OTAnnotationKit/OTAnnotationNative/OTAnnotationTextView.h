@@ -39,6 +39,11 @@ extern NSString *const OTAnnotationTextViewDidCancelChangeNotification;
  */
 @property (nonatomic, getter=isRotatable) BOOL rotatable;
 
+/**
+ *  The object that acts as the delegate of the annotation text view.
+ *
+ *  The delegate must adopt the OTAnnotationTextViewDelegate protocol. The delegate is not retained.
+ */
 @property (weak, nonatomic) id<OTAnnotationTextViewDelegate> annotationTextViewDelegate;
 
 /**

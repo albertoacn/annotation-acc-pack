@@ -11,7 +11,7 @@ android {
         versionCode 1
         versionName "1.0"
         project.archivesBaseName = "opentok-annotations"
-        project.version = "2.0.0"
+        project.version = "1.1.0"
         testApplicationId "com.tokbox.android.annotations.test"
         testInstrumentationRunner "com.tokbox.android.annotations.testbase.TestRunner"
     }

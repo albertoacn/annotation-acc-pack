@@ -14,7 +14,7 @@ static const CGFloat LeadingPaddingOfAnnotationTextView = 20.0f;
 
 
 static NSString * const kLogComponentIdentifier = @"annotationsAccPack";
-static NSString * const KLogClientVersion = @"ios-vsol-1.0.0";
+static NSString * const KLogClientVersion = @"ios-vsol-1.1.0";
 static NSString* const KLogActionInitialize = @"Init";
 static NSString* const KLogActionStartDrawing = @"StartDrawing";
 static NSString* const KLogActionEndDrawing = @"EndDrawing";

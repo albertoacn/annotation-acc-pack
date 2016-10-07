@@ -31,8 +31,8 @@
 /**
  *  Buttons from the view enabling the user to share or save the captured image.
  */
-@property (weak, nonatomic) IBOutlet UIButton *shareButton;
-@property (weak, nonatomic) IBOutlet UIButton *saveButton;
+@property (readonly, weak, nonatomic) UIButton *shareButton;
+@property (readonly, weak, nonatomic) UIButton *saveButton;
 
 /**
  *  Update the view with the shared image from the screen capture model object, and set the
