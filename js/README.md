@@ -31,7 +31,7 @@ The following `options` fields are used in the `AnnotationAccPack` constructor:<
 | ------------- | ------------- | -----|
 | Set the OpenTok session  (object).| `session` |`true`|
 | Set the Common layer API (object). | `accPack` |`false`|
-| Set the callback to receive the image data on scree capture (function). | `onScreenCapture` |`false`|
+| Set the callback to receive the image data on screen capture (function). | `onScreenCapture` |`false`|
 
 To initialize the accelerator pack:
 
