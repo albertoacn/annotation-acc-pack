@@ -5,14 +5,37 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <OTAnnotationKit/OTAnnotationPath.h>
+#import <OTAnnotationKit/OTAnnotationTextView.h>
 
 @class OTAnnotationToolbarView;
 @protocol OTAnnotationToolbarViewDataSource <NSObject>
+
+@optional
 - (UIView *)annotationToolbarViewForRootViewForScreenShot:(OTAnnotationToolbarView *)toolbarView;
+
 @end
 
 @protocol OTAnnotationToolbarViewDelegate <NSObject>
-- (void)annotationToolbarView:(OTAnnotationToolbarView *)toolbarView didPressToolbarViewItemButtonAtIndexPath:(NSIndexPath *)indexPath;
+
+@optional
+- (void)annotationToolbarViewDidPressDoneButton:(OTAnnotationToolbarView *)annotationToolbarView;
+
+- (void)annotationToolbarViewDidSelectDrawButton:(OTAnnotationToolbarView *)annotationToolbarView
+                                            path:(OTAnnotationPath *)path;
+
+- (void)annotationToolbarViewDidPressEraseButton:(OTAnnotationToolbarView *)annotationToolbarView;
+
+- (void)annotationToolbarViewDidPressCleanButton:(OTAnnotationToolbarView *)annotationToolbarView;
+
+- (void)annotationToolbarViewDidStartTextAnnotation:(OTAnnotationToolbarView *)annotationToolbarView;
+
+- (void)annotationToolbarViewDidAddTextAnnotation:(OTAnnotationToolbarView *)annotationToolbarView
+                               annotationTextView:(OTAnnotationTextView *)textView;
+
+- (void)annotationToolbarViewDidCancelTextAnnotation:(OTAnnotationToolbarView *)annotationToolbarView
+                                  annotationTextView:(OTAnnotationTextView *)textView;
+
 @end
 
 typedef NS_ENUM(NSUInteger, OTAnnotationToolbarViewOrientation) {
@@ -31,9 +54,9 @@ typedef NS_ENUM(NSUInteger, OTAnnotationToolbarViewOrientation) {
 @property (weak, nonatomic) id<OTAnnotationToolbarViewDataSource> toolbarViewDataSource;
 
 /**
- *  The object that acts as the delegate of the annotation toolbar view.
+ *  The object that acts as the delegate object of the annotation toolbar view.
  *
- *  The delegate must adopt the OTAnnotationToolbarViewDelegate protocol. The delegate is not retained.
+ *  The delegate must adopt the OTAnnotationToolbarViewDelegate protocol. The delegate object is not retained.
  */
 @property (weak, nonatomic) id<OTAnnotationToolbarViewDelegate> toolbarViewDelegate;
 

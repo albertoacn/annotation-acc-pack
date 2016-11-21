@@ -26,37 +26,28 @@ context(@"OTAnnotationScrollView", ^(){
     
     describe(@"An instance of OTAnnotationScrollView should set variables", ^{
         
-        OTAnnotationScrollView *annotationView = [[OTAnnotationScrollView alloc] initWithFrame:CGRectMake(0, 0, 100, 100)];
+        OTAnnotationScrollView *annotationScrollView = [[OTAnnotationScrollView alloc] initWithFrame:CGRectMake(0, 0, 100, 100)];
         
         it(@"annotationView", ^{
-            [[annotationView.annotationView shouldNot] beNil];
+            [[annotationScrollView.annotationView should] beNil];
         });
         
         it(@"isAnnotatable should be NO", ^{
-            [[theValue(annotationView.isAnnotatable) should] equal:theValue(NO)];
+            [[theValue(annotationScrollView.isAnnotatable) should] equal:theValue(NO)];
         });
         
         it(@"isAnnotatable should be YES", ^{
-            [annotationView setAnnotatable:YES];
-            [[theValue(annotationView.isAnnotatable) should] equal:theValue(YES)];
-        });
-        
-        it(@"isZoomEnabled should be YES", ^{
-            [[theValue(annotationView.isZoomEnabled) should] equal:theValue(YES)];
-        });
-        
-        it(@"isZoomEnabled should be NO", ^{
-            [annotationView setZoomEnabled:NO];
-            [[theValue(annotationView.isZoomEnabled) should] equal:theValue(NO)];
+            [annotationScrollView setAnnotatable:YES];
+            [[theValue(annotationScrollView.isAnnotatable) should] equal:theValue(YES)];
         });
         
         it(@"toolbar needs to be initialize first", ^{
-            [[annotationView.toolbarView should] beNil];
+            [[annotationScrollView.toolbarView should] beNil];
         });
         
         it(@"after initializeToolbarView, toolbarView should not be nil", ^{
-            [annotationView initializeToolbarView];
-            [[annotationView.toolbarView shouldNot] beNil];
+            [annotationScrollView initializeToolbarView];
+            [[annotationScrollView.toolbarView shouldNot] beNil];
         });
     });
 });

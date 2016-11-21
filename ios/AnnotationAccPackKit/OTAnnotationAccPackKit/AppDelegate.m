@@ -18,9 +18,10 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
-    [OTAnnotator setOpenTokApiKey:<#api key#>
-                        sessionId:<#session id#>
-                            token:<#token#>];
+#warning - replace your OpenTok credentials here
+    [OTAcceleratorSession setOpenTokApiKey:@"apikey"
+                                 sessionId:@"sessionid"
+                                     token:@"token"];
     return YES;
 }
 

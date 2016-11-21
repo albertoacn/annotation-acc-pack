@@ -15,16 +15,15 @@
 
 @interface OTAnnotationTextView() <UITextViewDelegate> {
     BOOL startTyping;
+    BOOL isRemoteSignaling;
 }
+@property (nonatomic) UIButton *commitButton;
 @property (nonatomic) UIButton *cancelButton;
 @property (nonatomic) UIButton *rotateButton;
 @property (nonatomic) UIButton *pinchButton;
 @end
 
 @implementation OTAnnotationTextView
-
-NSString *const OTAnnotationTextViewDidFinishChangeNotification = @"OTAnnotationTextViewDidFinishChangeNotification";
-NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotationTextViewDidCancelChangeNotification";
 
 - (UIButton *)cancelButton {
     if (!_cancelButton) {
@@ -37,6 +36,23 @@ NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotation
         [self addSubview:_cancelButton];
     }
     return _cancelButton;
+}
+
+- (UIButton *)commitButton {
+    if (!_commitButton) {
+        _commitButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 30, 30)];
+        [_commitButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        [_commitButton setBackgroundColor:[UIColor colorWithRed:118.0/255.0f green:206.0/255.0f blue:31.0/255.0f alpha:1.0]];
+        [_commitButton setImage:[UIImage imageNamed:@"checkmark" inBundle:[OTAnnotationKitBundle annotationKitBundle] compatibleWithTraitCollection:nil] forState:UIControlStateNormal];
+        [_commitButton setImageEdgeInsets:UIEdgeInsetsMake(6, 6, 6, 6)];
+        _commitButton.center = CGPointMake(CGRectGetWidth(self.bounds), 0);
+        _commitButton.layer.cornerRadius = CGRectGetWidth(_pinchButton.bounds) / 2;
+        _commitButton.layer.borderColor = [UIColor whiteColor].CGColor;
+        _commitButton.layer.borderWidth = 2.0f;
+        [_commitButton addTarget:self action:@selector(commitButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+        [self addSubview:_commitButton];
+    }
+    return _commitButton;
 }
 
 - (void)setDraggable:(BOOL)draggable {
@@ -117,7 +133,12 @@ NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotation
     }
 }
 
-+ (instancetype)defaultWithTextColor:(UIColor *)textColor {
+- (instancetype)init {
+    return nil;
+}
+
+- (instancetype)initWithTextColor:(UIColor *)textColor {
+    if (!textColor) return nil;
     return [[OTAnnotationTextView alloc] initWithText:nil textColor:textColor fontSize:0.0f];
 }
 
@@ -136,6 +157,8 @@ NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotation
         [self setDelegate:self];
         [self setTextColor:textColor];
         [self setScrollEnabled:NO];
+        [self setShowsVerticalScrollIndicator:NO];
+        [self setShowsHorizontalScrollIndicator:NO];
         [self setTextAlignment:NSTextAlignmentCenter];
         [self setTextContainerInset:UIEdgeInsetsMake(0, 0, 0, 0)];
         [self setSelectable:NO];
@@ -165,6 +188,17 @@ NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotation
         
         [self resizeTextView];
     }
+    
+    isRemoteSignaling = NO;
+    return self;
+}
+
+- (instancetype)initRemoteWithText:(NSString *)text
+                         textColor:(UIColor *)textColor
+                          fontSize:(CGFloat)fontSize{
+    if (self = [[OTAnnotationTextView alloc] initWithText:text textColor:textColor fontSize:fontSize]) {
+        isRemoteSignaling = YES;
+    }
     return self;
 }
 
@@ -181,6 +215,33 @@ NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotation
     [super setFrame:frame];
 }
 
+- (void)commitToMove {
+    if (self.annotationTextViewDelegate) {
+        
+        if (isRemoteSignaling) {
+            self.resizable = NO;
+            self.rotatable = NO;
+            [self setFont:[UIFont systemFontOfSize:12.0f]];
+            [self sizeToFit];
+        }
+        else {
+            self.resizable = YES;
+            self.rotatable = YES;
+        }
+        self.draggable = YES;
+        
+        // set editable and selectable NO so it won't have the pop-up menu
+        [self setEditable:NO];
+        [self setSelectable:NO];
+        [self commitButton];
+        [self cancelButton];
+        
+        if (self.annotationTextViewDelegate && [self.annotationTextViewDelegate respondsToSelector:@selector(annotationTextViewDidAddText:)]) {
+            [self.annotationTextViewDelegate annotationTextViewDidAddText:self];
+        }
+    }
+}
+
 - (void)commit {
     
     self.layer.borderWidth = 0.0f;
@@ -192,10 +253,17 @@ NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotation
     self.rotatable = NO;
     
     // workaround: the text view will get cut off if we remove it directly
+    self.commitButton.hidden = YES;
+    self.commitButton = nil;
     self.cancelButton.hidden = YES;
     self.cancelButton = nil;
     
     [self setUserInteractionEnabled:NO];
+    
+    if (isRemoteSignaling) {
+        [self sizeToFit];
+    }
+    
     [[AnnLoggingWrapper sharedInstance].logger logEventAction:KLogActionText variation:KLogVariationSuccess completion:nil];
 }
 
@@ -207,11 +275,16 @@ NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotation
     self.frame = newFrame;
 }
 
+- (void)commitButtonPressed:(UIButton *)sender {
+    if (self.annotationTextViewDelegate && [self.annotationTextViewDelegate respondsToSelector:@selector(annotationTextViewDidFinishEditing:)]) {
+        [self.annotationTextViewDelegate annotationTextViewDidFinishEditing:self];
+    }
+}
+
 - (void)cancelButtonPressed:(UIButton *)sender {
-    if (self.annotationTextViewDelegate) {
+    if (self.annotationTextViewDelegate && [self.annotationTextViewDelegate respondsToSelector:@selector(annotationTextViewDidCancel:)]) {
         [self.annotationTextViewDelegate annotationTextViewDidCancel:self];
     }
-    [[NSNotificationCenter defaultCenter] postNotificationName:OTAnnotationTextViewDidCancelChangeNotification object:self];
     [self removeFromSuperview];
 }
 
@@ -236,21 +309,38 @@ NSString *const OTAnnotationTextViewDidCancelChangeNotification = @"OTAnnotation
     if ([text isEqualToString:@"\n"]) {
         
         if (!textView.text.length) return NO;
-        
-        if (self.annotationTextViewDelegate) {
-            self.draggable = YES;
-            self.resizable = YES;
-            self.rotatable = YES;
-            
-            // set editable and selectable NO so it won't have the pop-up menu
-            [self setEditable:NO];
-            [self setSelectable:NO];
-            [self.annotationTextViewDelegate annotationTextViewDidFinishChange:self];
-            [[NSNotificationCenter defaultCenter] postNotificationName:OTAnnotationTextViewDidFinishChangeNotification object:self];
-            [self cancelButton];
-        }
+        [self commitToMove];
     }
     return YES;
+}
+
+@end
+
+#pragma mark - OTRemoteAnnotationTextView
+@interface OTRemoteAnnotationTextView()
+@property (nonatomic) NSString *remoteGUID;
+@end
+
+@implementation OTRemoteAnnotationTextView
+
+- (instancetype)initWithTextColor:(UIColor *)textColor
+                       remoteGUID:(NSString *)remoteGUID {
+    
+    if (self = [super initWithTextColor:textColor]) {
+        _remoteGUID = remoteGUID;
+    }
+    return self;
+}
+
+- (instancetype)initWithText:(NSString *)text
+                   textColor:(UIColor *)textColor
+                    fontSize:(CGFloat)fontSize
+                  remoteGUID:(NSString *)remoteGUID{
+    
+    if (self = [super initWithText:text textColor:textColor fontSize:fontSize]) {
+        _remoteGUID = remoteGUID;
+    }
+    return self;
 }
 
 @end
