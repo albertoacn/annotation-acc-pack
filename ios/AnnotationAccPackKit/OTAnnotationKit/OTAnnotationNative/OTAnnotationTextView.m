@@ -46,7 +46,7 @@
         [_commitButton setImage:[UIImage imageNamed:@"checkmark" inBundle:[OTAnnotationKitBundle annotationKitBundle] compatibleWithTraitCollection:nil] forState:UIControlStateNormal];
         [_commitButton setImageEdgeInsets:UIEdgeInsetsMake(6, 6, 6, 6)];
         _commitButton.center = CGPointMake(CGRectGetWidth(self.bounds), 0);
-        _commitButton.layer.cornerRadius = CGRectGetWidth(_pinchButton.bounds) / 2;
+        _commitButton.layer.cornerRadius = CGRectGetWidth(_commitButton.bounds) / 2;
         _commitButton.layer.borderColor = [UIColor whiteColor].CGColor;
         _commitButton.layer.borderWidth = 2.0f;
         [_commitButton addTarget:self action:@selector(commitButtonPressed:) forControlEvents:UIControlEventTouchUpInside];

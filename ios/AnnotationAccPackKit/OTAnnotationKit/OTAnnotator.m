@@ -43,13 +43,12 @@
     return self;
 }
 
-- (void)dealloc {
-    [self disconnect];
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
 - (NSError *)connect {
     if (!self.delegate && !self.handler) return nil;
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(eraseButtonPressed:) name:kOTAnnotationToolbarDidPressEraseButton object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(cleanButtonPressed:) name:kOTAnnotationToolbarDidPressCleanButton object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(textDidAdd:) name:kOTAnnotationToolbarDidAddTextAnnotation object:nil];
     return [OTAcceleratorSession registerWithAccePack:self];
 }
 
@@ -63,6 +62,7 @@
         [self.annotationScrollView.annotationView removeAllAnnotatables];
         [self.annotationScrollView.annotationView removeAllRemoteAnnotatables];
     }
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
     return [OTAcceleratorSession deregisterWithAccePack:self];
 }
 
@@ -128,6 +128,10 @@
 - (void)sessionDidReconnect:(OTSession *)session {
     [self notifiyAllWithSignal:OTAnnotationSessionDidReconnect
                          error:nil];
+}
+
+- (void)clearRemoteCanvas {
+    [self cleanButtonPressed:nil];
 }
 
 // OPENTOK SIGNALING
@@ -266,11 +270,11 @@ receivedSignalType:(NSString*)type
 
     NSString *jsonString;
     
-    if ([notification.object isMemberOfClass:[OTAnnotationPath class]] ) {
-        OTAnnotationPath *path = (OTAnnotationPath *)notification.object;
+    if ([notification.userInfo[@"annotation"] isMemberOfClass:[OTAnnotationPath class]] ) {
+        OTAnnotationPath *path = (OTAnnotationPath *)notification.userInfo[@"annotation"];
         jsonString = [JSON stringify:@[path.uuid]];
     }
-    else if ([notification.object isMemberOfClass:[OTAnnotationTextView class]]) {
+    else if ([notification.userInfo[@"annotation"] isMemberOfClass:[OTAnnotationTextView class]]) {
         jsonString = [JSON stringify:@[[NSNull null]]];
     }
     
@@ -297,9 +301,9 @@ receivedSignalType:(NSString*)type
 - (void)textDidAdd:(NSNotification *)notification {
     
     if (!latestScreenShareStream) return;
-    if (![notification.object isMemberOfClass:[OTAnnotationTextView class]]) return;
+    if (![notification.userInfo[@"annotation"] isMemberOfClass:[OTAnnotationTextView class]]) return;
     
-    OTAnnotationTextView *textView = (OTAnnotationTextView *)notification.object;
+    OTAnnotationTextView *textView = (OTAnnotationTextView *)notification.userInfo[@"annotation"];
     NSDictionary *data = @{
                            @"id": latestScreenShareStream.connection.connectionId,
                            @"fromId": self.session.connection.connectionId,

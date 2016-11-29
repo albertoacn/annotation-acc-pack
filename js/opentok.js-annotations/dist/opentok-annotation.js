@@ -78,6 +78,9 @@
       _logAnalytics();
     }
 
+    if (typeof module === 'object' && typeof module.exports === 'object') {
+      $ = require('jquery');
+    }  
 
     var context = options.externalWindow ? options.externalWindow.document : window.document;
 
@@ -106,6 +109,7 @@
       updateHistory = [],
       eventHistory = [],
       isStartPoint = false,
+      isVideo = self.videoFeed && self.videoFeed.element ? true : false,
       client = {
         dragging: false
       };
@@ -113,9 +117,14 @@
 
 
     // INFO Mirrored feeds contain the OT_mirrored class
-    isPublisher = (' ' + self.videoFeed.element.className + ' ').indexOf(' ' + 'OT_publisher' + ' ') > -1;
-    mirrored = isPublisher ? (' ' + self.videoFeed.element.className + ' ').indexOf(' ' + 'OT_mirrored' + ' ') > -1 : false;
-    scaledToFill = (' ' + self.videoFeed.element.className + ' ').indexOf(' ' + 'OT_fit-mode-cover' + ' ') > -1;
+    if(isVideo) {
+      isPublisher = (' ' + self.videoFeed.element.className + ' ').indexOf(' ' + 'OT_publisher' + ' ') > -1;
+      mirrored = isPublisher ? (' ' + self.videoFeed.element.className + ' ').indexOf(' ' + 'OT_mirrored' + ' ') > -1 : false;
+      scaledToFill = (' ' + self.videoFeed.element.className + ' ').indexOf(' ' + 'OT_fit-mode-cover' + ' ') > -1;  
+    } else {
+      mirrored = false;
+      scaledToFill = false;
+    }
 
     this.canvas = function () {
       return canvas;
@@ -229,8 +238,8 @@
       canvasCopy.width = canvas.width;
       canvasCopy.height = canvas.height;
 
-      var width = self.videoFeed.videoWidth();
-      var height = self.videoFeed.videoHeight();
+      var width = isVideo ? self.videoFeed.videoWidth() : canvas.width;
+      var height = isVideo ? self.videoFeed.videoHeight() : canvas.height;
 
       var scale = 1;
 
@@ -293,8 +302,13 @@
         // Clear and destroy the canvas copy
         canvasCopy = null;
       };
-      image.src = 'data:image/png;base64,' + self.videoFeed.getImgData();
 
+      if(isVideo) {
+        imgData = 'data:image/png;base64,' + self.videoFeed.getImgData(); 
+        image.src = imgData;   
+      } else {
+        image.src = $(self.parent).css('background-image').replace( /url\("|"\)/g, '' );
+      }
 
     };
 
@@ -366,7 +380,7 @@
             case 'touchmove':
               if (client.dragging) {
                 update = {
-                  id: self.videoFeed.stream.connection.connectionId,
+                  id: isVideo ? self.videoFeed.stream.connection.connectionId : self.session.connection.connectionId,
                   fromId: self.session.connection.connectionId,
                   fromX: client.lastX,
                   fromY: client.lastY,
@@ -374,8 +388,8 @@
                   toY: y,
                   color: resizeEvent ? event.userColor : self.userColor,
                   lineWidth: self.lineWidth,
-                  videoWidth: self.videoFeed.videoElement().clientWidth,
-                  videoHeight: self.videoFeed.videoElement().clientHeight,
+                  videoWidth: isVideo ? self.videoFeed.videoElement().clientWidth : canvas.width,
+                  videoHeight: isVideo ? self.videoFeed.videoElement().clientHeight : canvas.height,
                   canvasWidth: canvas.width,
                   canvasHeight: canvas.height,
                   mirrored: mirrored,
@@ -396,7 +410,7 @@
             case 'touchend':
               client.dragging = false;
               update = {
-                id: self.videoFeed.stream.connection.connectionId,
+                id: isVideo ? self.videoFeed.stream.connection.connectionId : self.session.connection.connectionId,
                 fromId: self.session.connection.connectionId,
                 fromX: client.lastX,
                 fromY: client.lastY,
@@ -404,8 +418,8 @@
                 toY: y,
                 color: resizeEvent ? event.userColor : self.userColor,
                 lineWidth: self.lineWidth,
-                videoWidth: self.videoFeed.videoElement().clientWidth,
-                videoHeight: self.videoFeed.videoElement().clientHeight,
+                videoWidth: isVideo ? self.videoFeed.videoElement().clientWidth : canvas.width,
+                videoHeight: isVideo ? self.videoFeed.videoElement().clientHeight : canvas.height,
                 canvasWidth: canvas.width,
                 canvasHeight: canvas.height,
                 mirrored: mirrored,
@@ -428,15 +442,15 @@
         } else if (selectedItem.id === 'OT_text') {
 
           update = {
-            id: self.videoFeed.stream.connection.connectionId,
+            id: isVideo ? self.videoFeed.stream.connection.connectionId : self.session.connection.connectionId,
             fromId: self.session.connection.connectionId,
             fromX: x,
             fromY: y + event.inputHeight, // Account for the height of the text input
             color: event.userColor,
             font: event.font,
             text: event.text,
-            videoWidth: self.videoFeed.videoElement().clientWidth,
-            videoHeight: self.videoFeed.videoElement().clientHeight,
+            videoWidth: isVideo ? self.videoFeed.videoElement().clientWidth : canvas.width,
+            videoHeight: isVideo ? self.videoFeed.videoElement().clientHeight : canvas.height,
             canvasWidth: canvas.width,
             canvasHeight: canvas.height,
             mirrored: mirrored,
@@ -486,7 +500,7 @@
 
                 if (points.length === 2) {
                   update = {
-                    id: self.videoFeed.stream.connection.connectionId,
+                    id: isVideo ? self.videoFeed.stream.connection.connectionId : self.session.connection.connectionId,
                     fromId: self.session.connection.connectionId,
                     fromX: client.startX,
                     fromY: client.startY,
@@ -494,8 +508,8 @@
                     toY: client.mY,
                     color: resizeEvent ? event.userColor : self.userColor,
                     lineWidth: resizeEvent ? event.lineWidth : shapeLineWidth,
-                    videoWidth: self.videoFeed.videoElement().clientWidth,
-                    videoHeight: self.videoFeed.videoElement().clientHeight,
+                    videoWidth: isVideo ? self.videoFeed.videoElement().clientWidth : canvas.width,
+                    videoHeight: isVideo ? self.videoFeed.videoElement().clientHeight : canvas.height,
                     canvasWidth: canvas.width,
                     canvasHeight: canvas.height,
                     mirrored: mirrored,
@@ -529,7 +543,7 @@
                     }
 
                     update = {
-                      id: self.videoFeed.stream.connection.connectionId,
+                      id: isVideo ? self.videoFeed.stream.connection.connectionId : self.session.connection.connectionId,
                       fromId: self.session.connection.connectionId,
                       fromX: client.lastX,
                       fromY: client.lastY,
@@ -537,8 +551,8 @@
                       toY: pointY,
                       color: resizeEvent ? event.userColor : self.userColor,
                       lineWidth: resizeEvent ? event.lineWidth : shapeLineWidth,
-                      videoWidth: self.videoFeed.videoElement().clientWidth,
-                      videoHeight: self.videoFeed.videoElement().clientHeight,
+                      videoWidth: isVideo ? self.videoFeed.videoElement().clientWidth : canvas.width,
+                      videoHeight: isVideo ? self.videoFeed.videoElement().clientHeight : canvas.height,
                       canvasWidth: canvas.width,
                       canvasHeight: canvas.height,
                       mirrored: mirrored,
@@ -928,8 +942,8 @@
       };
 
       var video = {
-        width: self.videoFeed.videoElement().clientWidth,
-        height: self.videoFeed.videoElement().clientHeight
+        width: isVideo ? self.videoFeed.videoElement().clientWidth : canvas.width,
+        height: isVideo ? self.videoFeed.videoElement().clientHeight : canvas.height
       };
 
       var scale = 1;
@@ -1003,7 +1017,7 @@
     var drawUpdates = function (updates, resizeEvent) {
 
       updates.forEach(function (update, index) {
-        if (self.videoFeed.stream && update.id === self.videoFeed.stream.connection.connectionId) {
+        if (!isVideo || (self.videoFeed && self.videoFeed.stream && update.id === self.videoFeed.stream.connection.connectionId)) {
           drawIncoming(update, resizeEvent, index);
         }
       });
@@ -1044,7 +1058,7 @@
         historyItem = drawHistory[i];
         if (historyItem.fromId === cid) {
 
-          if(historyItem.platform === 'ios') {
+          if(historyItem.platform === 'ios' && itemsToRemove != null && itemsToRemove.length > 0) {
             undoLastIos(incoming, cid, itemsToRemove);
             break;
           } 
@@ -1115,15 +1129,15 @@
 
     var count = 0;
     /** Signal Handling **/
-    if (self.videoFeed.session) {
-      self.videoFeed.session.on({
+    if (_session) {
+      _session.on({
         'signal:otAnnotation_pen': function (event) {
-          if (event.from.connectionId !== self.session.connection.connectionId) {
+          if (event.from.connectionId !== _session.connection.connectionId) {
             drawUpdates(JSON.parse(event.data));
           }
         },
         'signal:otAnnotation_text': function (event) {
-          if (event.from.connectionId !== self.session.connection.connectionId) {
+          if (event.from.connectionId !== _session.connection.connectionId) {
             drawUpdates(JSON.parse(event.data));
           }
         },
@@ -1136,19 +1150,19 @@
           }
         },
         'signal:otAnnotation_clear': function (event) {
-          if (event.from.connectionId !== self.session.connection.connectionId) {
+          if (event.from.connectionId !== _session.connection.connectionId) {
             // Only clear elements drawn by the sender's (from) Id
             clearCanvas(true, event.from.connectionId);
           }
         },
         'signal:otAnnotation_undo': function (event) {
-          if (event.from.connectionId !== self.session.connection.connectionId) {
+          if (event.from.connectionId !== _session.connection.connectionId) {
             // Only clear elements drawn by the sender's (from) Id
             undoLast(true, event.from.connectionId, JSON.parse(event.data));
           }
         },
         connectionCreated: function (event) {
-          if (drawHistory.length > 0 && event.connection.connectionId !== self.session.connection.connectionId) {
+          if (drawHistory.length > 0 && event.connection.connectionId !== _session.connection.connectionId) {
             batchSignal('otWhiteboard_history', drawHistory, event.connection);
           }
         }
@@ -2130,13 +2144,15 @@
         width = height * _aspectRatio;
       }
     } else {
-      var el = _elements.absoluteParent || _elements.canvasContainer;
-      width = el.clientWidth;
-      height = width / (_aspectRatio);
-      if (el.clientHeight < (width / _aspectRatio)) {
-        height = el.clientHeight;
-        width = height * _aspectRatio;
-      }
+      if (_elements.imageId === null) {
+        var el = _elements.absoluteParent || _elements.canvasContainer;
+        width = el.clientWidth;
+        height = width / (_aspectRatio);
+        if (el.clientHeight < (width / _aspectRatio)) {
+          height = el.clientHeight;
+          width = height * _aspectRatio;
+        }
+      }  
     }
 
     $(_elements.canvasContainer).css({
@@ -2271,9 +2287,7 @@
   var _removeToolbar = function () {
     $(_elements.resizeSubject).off('resize', _resizeCanvas);
     toolbar.remove();
-    if (!_elements.externalWindow) {
-      $('#annotationToolbarContainer').remove();
-    }
+    $('#annotationToolbarContainer').remove();
   };
 
   /**
@@ -2328,6 +2342,7 @@
     _elements.resizeSubject = _.property('externalWindow')(options) || window;
     _elements.externalWindow = _.property('externalWindow')(options) || null;
     _elements.absoluteParent = _.property('absoluteParent')(options) || null;
+    _elements.imageId = _.property('imageId')(options) || null;
     _elements.canvasContainer = container;
 
 

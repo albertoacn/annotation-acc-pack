@@ -8,6 +8,12 @@
 #import "UIView+Helper.h"
 #import "UIButton+AutoLayoutHelper.h"
 
+#import <OTAcceleratorPackUtil/OTAcceleratorPackUtil.h>
+
+NSString * const kOTAnnotationToolbarDidPressEraseButton = @"kOTAnnotationToolbarDidPressEraseButton";
+NSString * const kOTAnnotationToolbarDidPressCleanButton = @"kOTAnnotationToolbarDidPressCleanButton";
+NSString * const kOTAnnotationToolbarDidAddTextAnnotation = @"kOTAnnotationToolbarDidAddTextAnnotation";
+
 @interface OTAnnotationToolbarButton : UIButton
 @end
 
@@ -185,13 +191,29 @@
 }
 
 - (void)done {
+    
+    if (self.toolbarViewDelegate && [self.toolbarViewDelegate respondsToSelector:@selector(annotationToolbarViewAttemptToPressDoneButton:)]) {
+        BOOL done = [self.toolbarViewDelegate respondsToSelector:@selector(annotationToolbarViewAttemptToPressDoneButton:)];
+        if (!done) {
+            return;
+        }
+        [self.toolbarViewDelegate annotationToolbarViewAttemptToPressDoneButton:self];
+    }
+    
     if ([self.annotationScrollView.annotationView.currentAnnotatable isKindOfClass:[OTAnnotationTextView class]]) {
         OTAnnotationTextView *textView = (OTAnnotationTextView *)self.annotationScrollView.annotationView.currentAnnotatable;
         [textView removeFromSuperview];
     }
     self.annotationScrollView.annotatable = NO;
     [self dismissColorPickerViewWithAniamtion:YES];
-    [self.toolbar removeContentViewAtIndex:0];
+    
+    UIDeviceOrientation orientation = [UIDevice currentDevice].orientation;
+    if (orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight) {
+        [self.toolbar removeContentViewAtIndex:6];
+    }
+    else {
+        [self.toolbar removeContentViewAtIndex:0];
+    }
     [self moveSelectionShadowViewTo:nil];
     [self resetToolbarButtons];
     if (self.toolbarViewDelegate && [self.toolbarViewDelegate respondsToSelector:@selector(annotationToolbarViewDidPressDoneButton:)]) {
@@ -227,12 +249,23 @@
     [_eraseAllButton setImage:[UIImage imageNamed:@"trashcan" inBundle:frameworkBundle compatibleWithTraitCollection:nil] forState:UIControlStateNormal];
     [_eraseAllButton addTarget:self action:@selector(toolbarButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
     
-    [_toolbar setContentView:_annotateButton atIndex:0];
-    [_toolbar setContentView:_colorButton atIndex:1];
-    [_toolbar setContentView:_textButton atIndex:2];
-    [_toolbar setContentView:_screenshotButton atIndex:3];
-    [_toolbar setContentView:_eraseButton atIndex:4];
-    [_toolbar setContentView:_eraseAllButton atIndex:5];
+    UIDeviceOrientation orientation = [UIDevice currentDevice].orientation;
+    if (orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight) {
+        [_toolbar setContentView:_annotateButton atIndex:5];
+        [_toolbar setContentView:_colorButton atIndex:4];
+        [_toolbar setContentView:_textButton atIndex:3];
+        [_toolbar setContentView:_screenshotButton atIndex:2];
+        [_toolbar setContentView:_eraseButton atIndex:1];
+        [_toolbar setContentView:_eraseAllButton atIndex:0];
+    }
+    else {
+        [_toolbar setContentView:_annotateButton atIndex:0];
+        [_toolbar setContentView:_colorButton atIndex:1];
+        [_toolbar setContentView:_textButton atIndex:2];
+        [_toolbar setContentView:_screenshotButton atIndex:3];
+        [_toolbar setContentView:_eraseButton atIndex:4];
+        [_toolbar setContentView:_eraseAllButton atIndex:5];
+    }
     
     [_toolbar reloadToolbar];
 }
@@ -246,7 +279,13 @@
         self.annotationScrollView.annotatable = YES;
         [self dismissColorPickerViewWithAniamtion:YES];
         if (![self.toolbar containedContentView:self.doneButton]) {
-            [self.toolbar insertContentView:self.doneButton atIndex:0];
+            UIDeviceOrientation orientation = [UIDevice currentDevice].orientation;
+            if (orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight) {
+                [self.toolbar insertContentView:self.doneButton atIndex:6];
+            }
+            else {
+                [self.toolbar insertContentView:self.doneButton atIndex:0];
+            }
         }
         OTAnnotationPath *path = [[OTAnnotationPath alloc] initWithStrokeColor:self.colorPickerView.selectedColor];
         [self.annotationScrollView.annotationView setCurrentAnnotatable:path];
@@ -263,7 +302,13 @@
         [self moveSelectionShadowViewTo:nil];
         [self dismissColorPickerViewWithAniamtion:NO];
         if (![self.toolbar containedContentView:self.doneButton]) {
-            [self.toolbar insertContentView:self.doneButton atIndex:0];
+            UIDeviceOrientation orientation = [UIDevice currentDevice].orientation;
+            if (orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight) {
+                [self.toolbar insertContentView:self.doneButton atIndex:6];
+            }
+            else {
+                [self.toolbar insertContentView:self.doneButton atIndex:0];
+            }
         }
         
         OTAnnotationEditTextViewController *editTextViewController;
@@ -290,6 +335,9 @@
             if (self.toolbarViewDelegate && [self.toolbarViewDelegate respondsToSelector:@selector(annotationToolbarViewDidPressEraseButton:)]) {
                 [self.toolbarViewDelegate annotationToolbarViewDidPressEraseButton:self];
             }
+            [[NSNotificationCenter defaultCenter] postNotificationName:kOTAnnotationToolbarDidPressEraseButton
+                                                                object:self
+                                                              userInfo:@{@"annotation":annotatableToRemove}];
         }
     }
     else if (sender == self.eraseAllButton) {
@@ -297,6 +345,9 @@
         if (self.toolbarViewDelegate && [self.toolbarViewDelegate respondsToSelector:@selector(annotationToolbarViewDidPressCleanButton:)]) {
             [self.toolbarViewDelegate annotationToolbarViewDidPressCleanButton:self];
         }
+        [[NSNotificationCenter defaultCenter] postNotificationName:kOTAnnotationToolbarDidPressCleanButton
+                                                            object:self
+                                                          userInfo:nil];
     }
     else if (sender == self.screenshotButton) {
         
@@ -346,6 +397,9 @@
     if (self.toolbarViewDelegate && [self.toolbarViewDelegate respondsToSelector:@selector(annotationToolbarViewDidAddTextAnnotation:annotationTextView:)]) {
         [self.toolbarViewDelegate annotationToolbarViewDidAddTextAnnotation:self annotationTextView:textView];
     }
+    [[NSNotificationCenter defaultCenter] postNotificationName:kOTAnnotationToolbarDidAddTextAnnotation
+                                                        object:self
+                                                      userInfo:@{@"annotation":textView}];
 }
 
 - (void)annotationTextViewDidCancel:(OTAnnotationTextView *)textView {

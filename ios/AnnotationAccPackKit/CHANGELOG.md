@@ -8,7 +8,11 @@ The changelog for `screensharing-annotation-acc-pack` iOS.
 -----
 
 ### Enhancements
-- Re design annotation toolbar to be more natural
+- Re design annotation toolbar to be more natural.
+- Re order annotation toolbar under landscape mode.
+
+### Fixes
+- Fix a bug that results in unregistered annotator receiving post notification.
 
 1.1.12
 -----

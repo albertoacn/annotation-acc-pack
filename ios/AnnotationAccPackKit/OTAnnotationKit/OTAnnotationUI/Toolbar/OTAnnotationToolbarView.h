@@ -8,6 +8,10 @@
 #import <OTAnnotationKit/OTAnnotationPath.h>
 #import <OTAnnotationKit/OTAnnotationTextView.h>
 
+extern NSString *const kOTAnnotationToolbarDidPressEraseButton;
+extern NSString *const kOTAnnotationToolbarDidPressCleanButton;
+extern NSString *const kOTAnnotationToolbarDidAddTextAnnotation;
+
 @class OTAnnotationToolbarView;
 @protocol OTAnnotationToolbarViewDataSource <NSObject>
 
@@ -19,6 +23,9 @@
 @protocol OTAnnotationToolbarViewDelegate <NSObject>
 
 @optional
+
+- (BOOL)annotationToolbarViewAttemptToPressDoneButton:(OTAnnotationToolbarView *)annotationToolbarView;
+
 - (void)annotationToolbarViewDidPressDoneButton:(OTAnnotationToolbarView *)annotationToolbarView;
 
 - (void)annotationToolbarViewDidSelectDrawButton:(OTAnnotationToolbarView *)annotationToolbarView

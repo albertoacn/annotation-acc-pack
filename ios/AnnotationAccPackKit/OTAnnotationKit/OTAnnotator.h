@@ -94,4 +94,6 @@ typedef void (^OTAnnotationDataReceivingBlock)(NSArray *data);
  */
 @property (readonly, nonatomic) OTAnnotationScrollView *annotationScrollView;
 
+- (void)clearRemoteCanvas;
+
 @end
