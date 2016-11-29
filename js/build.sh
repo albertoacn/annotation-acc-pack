@@ -31,5 +31,10 @@ else
 fi
 fi
 
+if [ "$task" == "-t" ]; then
+	cd ..
+	grunt karma:prod
+fi
+
 echo Invalid parameters, please use ‘-t’ to run tests or ‘-d’ to create zip file with JS and doc.
 exit 1
