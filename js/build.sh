@@ -2,6 +2,7 @@
 set -e
 
 task="$1"
+force="$2"
 
 #Create zip file with JS and doc
 if [ "$task" == "-d" ]; then
@@ -22,7 +23,7 @@ fi
 
 if [ "$task" == "-t" ]; then
 	cd opentok.js-annotations
-	grunt karma:prod
+	grunt karma:prod "$force"
 	exit 0
 fi
 
