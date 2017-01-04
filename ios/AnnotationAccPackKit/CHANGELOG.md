@@ -10,9 +10,11 @@ The changelog for `screensharing-annotation-acc-pack` iOS.
 ### Enhancements
 - Re design annotation toolbar to be more natural.
 - Re order annotation toolbar under landscape mode.
+- An anntoator can to attach to a specified session rather than the shared one.
 
 ### Fixes
 - Fix a bug that results in unregistered annotator receiving post notification.
+- Fix a bug to make sure a target stream is always there.
 
 1.1.12
 -----

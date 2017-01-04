@@ -5,8 +5,8 @@
 //
 
 #import <UIKit/UIKit.h>
-#import <OTAnnotationKit/OTAnnotationPath.h>
-#import <OTAnnotationKit/OTAnnotationTextView.h>
+#import "OTAnnotationPath.h"
+#import "OTAnnotationTextView.h"
 
 extern NSString *const kOTAnnotationToolbarDidPressEraseButton;
 extern NSString *const kOTAnnotationToolbarDidPressCleanButton;
@@ -76,5 +76,13 @@ typedef NS_ENUM(NSUInteger, OTAnnotationToolbarViewOrientation) {
  *
  */
 @property (nonatomic) OTAnnotationToolbarViewOrientation toolbarViewOrientation;
+
+@property (readonly, nonatomic) UIButton *doneButton;
+@property (readonly, nonatomic) UIButton *annotateButton;
+@property (readonly, nonatomic) UIButton *colorButton;
+@property (readonly, nonatomic) UIButton *textButton;
+@property (readonly, nonatomic) UIButton *screenshotButton;
+@property (readonly, nonatomic) UIButton *eraseButton;
+@property (readonly, nonatomic) UIButton *eraseAllButton;
 
 @end

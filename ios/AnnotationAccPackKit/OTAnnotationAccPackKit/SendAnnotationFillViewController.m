@@ -8,10 +8,12 @@
 
 #import "SendAnnotationFillViewController.h"
 
-#import <OTAnnotationKit/OTAnnotationKit.h>
-#import <OTScreenShareKit/OTScreenShareKit.h>
+#import "OTAnnotator.h"
+#import "OTScreenSharer.h"
 
-@interface SendAnnotationFillViewController ()
+#import "AppDelegate.h"
+
+@interface SendAnnotationFillViewController () <OTScreenShareDataSource, OTAnnotatorDataSource>
 @property (nonatomic) OTAnnotator *annotator;
 @property (nonatomic) OTScreenSharer *sharer;
 @end
@@ -29,24 +31,26 @@
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
-    self.sharer = [OTScreenSharer sharedInstance];
+    self.sharer = [[OTScreenSharer alloc] init];
+    self.sharer.dataSource = self;
     self.sharer.subscriberVideoContentMode = OTScreenShareVideoViewFill;
     [self.sharer connectWithView:nil
                          handler:^(OTScreenShareSignal signal, NSError *error) {
                              
                              if (!error) {
                                  
-                                 if (signal == OTScreenShareSignalSessionDidConnect) {
+                                 if (signal == OTScreenSharePublisherCreated) {
                                      self.sharer.publishAudio = NO;
                                      self.sharer.subscribeToAudio = NO;
                                  }
-                                 else if (signal == OTScreenShareSignalSubscriberDidConnect) {
+                                 else if (signal == OTScreenShareSubscriberCreated) {
                                      
                                      [self.sharer.subscriberView removeFromSuperview];
                                      self.sharer.subscriberView.frame = CGRectMake(0, 0, self.sharer.subscriberVideoDimension.width, self.sharer.subscriberVideoDimension.height);
                                      
                                      // connect for annotation
                                      self.annotator = [[OTAnnotator alloc] init];
+                                     self.annotator.dataSource = self;
                                      [self.annotator connectWithCompletionHandler:^(OTAnnotationSignal signal, NSError *error) {
                                                        
                                          if (signal == OTAnnotationSessionDidConnect){
@@ -111,6 +115,14 @@
     self.annotator = nil;
     [self.sharer disconnect];
     self.sharer = nil;
+}
+
+- (OTAcceleratorSession *)sessionOfOTAnnotator:(OTAnnotator *)annotator {
+    return [(AppDelegate*)[[UIApplication sharedApplication] delegate] getSharedAcceleratorSession];
+}
+
+- (OTAcceleratorSession *)sessionOfOTScreenSharer:(OTScreenSharer *)screenSharer {
+    return [(AppDelegate*)[[UIApplication sharedApplication] delegate] getSharedAcceleratorSession];
 }
 
 @end

@@ -4,7 +4,7 @@
 //  Copyright © 2016 Tokbox. All rights reserved.
 //
 
-#import <OTAnnotationKit/OTAnnotatable.h>
+#import "OTAnnotatable.h"
 
 /**
  *  The class describes an annotatable point in an OTAnnotationView.

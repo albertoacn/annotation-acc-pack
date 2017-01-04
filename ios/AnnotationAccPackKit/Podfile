@@ -2,19 +2,11 @@ platform :ios, '8.0'
 
 def shared_pods
 	pod 'LHToolbar', '1.3.0-beta'
-    pod 'OTAcceleratorPackUtil', '~> 1.2.4'
-    pod 'OTScreenShareKit', '~> 1.1.6'
-end
-
-target 'OTAnnotationAccPackKit' do 
-	shared_pods
+    pod 'OTAcceleratorPackUtil', '~> 2.0.0-beta2'
+    pod 'OTScreenShareKit', '~> 2.0.0-beta1'
 end
 
 target 'OTAnnotationKit' do
-    shared_pods
-end
-
-target 'OTAnnotationKitStatic' do
     shared_pods
 end
 

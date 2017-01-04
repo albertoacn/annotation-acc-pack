@@ -133,51 +133,53 @@
   var _resizeCanvas = function () {
     var width;
     var height;
-
-    if (!!_elements.externalWindow) {
-      var windowDimensions = {
-        width: _elements.externalWindow.innerWidth,
-        height: _elements.externalWindow.innerHeight
-      };
-
-      var computedHeight = windowDimensions.width / _aspectRatio;
-
-      if (computedHeight <= windowDimensions.height) {
-        width = windowDimensions.width;
-        height = computedHeight;
-      } else {
-        height = windowDimensions.height;
-        width = height * _aspectRatio;
-      }
-    } else {
-      if (_elements.imageId === null) {
-        var el = _elements.absoluteParent || _elements.canvasContainer;
-        width = el.clientWidth;
-        height = width / (_aspectRatio);
-        if (el.clientHeight < (width / _aspectRatio)) {
-          height = el.clientHeight;
-          width = height * _aspectRatio;
-        }
-      }  
+    var cobrowsing = !!_elements.imageId;
+    if (cobrowsing) {
+      // Cobrowsing images are currently fixed size, so resize isn't needed
+      return;
     }
 
-    $(_elements.canvasContainer).css({
-      width: width,
-      height: height
-    });
+    if (_elements.imageId === null) {
+      var el = _elements.absoluteParent || _elements.canvasContainer;
+      width = el.clientWidth;
+      height = el.clientHeight;
+    }
 
-    $(_elements.canvasContainer).find('canvas').css({
-      width: width,
-      height: height
-    });
+    var videoDimensions = _canvas.videoFeed.stream.videoDimensions;
+    var origRatio = videoDimensions.width / videoDimensions.height;
+    var destRatio = width / height;
+    var calcDimensions = {
+      top: 0,
+      left: 0,
+      height: height,
+      width: width
+    };
 
-    $(_elements.canvasContainer).find('canvas').attr({
-      width: width,
-      height: height
-    });
+    if (!_elements.externalWindow) {
+      if (origRatio < destRatio) {
+        // height is the limiting prop, we'll get vertical bars
+        calcDimensions.width = calcDimensions.height * origRatio;
+        calcDimensions.left = (width - calcDimensions.width) / 2;
+      } else {
+        calcDimensions.height = calcDimensions.width / origRatio;
+        calcDimensions.top = (height - calcDimensions.height) / 2;
+      }
+    }
+
+    $(_elements.canvasContainer).find('canvas').css(calcDimensions);
+
+    $(_elements.canvasContainer).find('canvas').attr(calcDimensions);
 
     _refreshCanvas();
     _triggerEvent('resizeCanvas');
+  };
+
+  var _changeColorByIndex = function(colorIndex) {
+    _canvas.changeColorByIndex(colorIndex);
+  };
+
+  var _takeScreenShot = function() {
+    _canvas.captureScreenshot(true);
   };
 
   var _listenForResize = function () {
@@ -388,6 +390,18 @@
   };
 
   /**
+   * Change the annotation color of the toolbar passing the colorIndex
+   * @param {Integer} colorIndex - The color index number
+   */
+  var changeColorByIndex = function (colorIndex) {
+    _changeColorByIndex(colorIndex);
+  };
+
+  var takeScreenShot = function () {
+    _takeScreenShot();
+  };
+
+  /**
    * Adds a subscriber's video the external annotation window
    * @param {Object} stream - The subscriber stream object
    */
@@ -456,8 +470,10 @@
     resizeCanvas: resizeCanvas,
     addSubscriberToExternalWindow: addSubscriberToExternalWindow,
     end: end,
-    hideToolbar:hideToolbar,
-    showToolbar:showToolbar
+    hideToolbar: hideToolbar,
+    showToolbar: showToolbar,
+    changeColorByIndex: changeColorByIndex,
+    takeScreenShot: takeScreenShot
   };
 
   if (typeof exports === 'object') {

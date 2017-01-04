@@ -8,7 +8,7 @@
 #import "UIView+Helper.h"
 #import "UIButton+AutoLayoutHelper.h"
 
-#import <OTAcceleratorPackUtil/OTAcceleratorPackUtil.h>
+#import "OTAcceleratorSession.h"
 
 NSString * const kOTAnnotationToolbarDidPressEraseButton = @"kOTAnnotationToolbarDidPressEraseButton";
 NSString * const kOTAnnotationToolbarDidPressCleanButton = @"kOTAnnotationToolbarDidPressCleanButton";
@@ -115,6 +115,24 @@ NSString * const kOTAnnotationToolbarDidAddTextAnnotation = @"kOTAnnotationToolb
         self.toolbar.orientation = LHToolbarOrientationVertical;
         self.colorPickerView.annotationColorPickerViewOrientation = OTAnnotationColorPickerViewOrientationLandscape;
     }
+    
+    if (self.toolbarViewOrientation == OTAnnotationToolbarViewOrientationPortraitlBottom) {
+        [_toolbar setContentView:_annotateButton atIndex:0];
+        [_toolbar setContentView:_colorButton atIndex:1];
+        [_toolbar setContentView:_textButton atIndex:2];
+        [_toolbar setContentView:_screenshotButton atIndex:3];
+        [_toolbar setContentView:_eraseButton atIndex:4];
+        [_toolbar setContentView:_eraseAllButton atIndex:5];
+    }
+    else {
+        [_toolbar setContentView:_annotateButton atIndex:5];
+        [_toolbar setContentView:_colorButton atIndex:4];
+        [_toolbar setContentView:_textButton atIndex:3];
+        [_toolbar setContentView:_screenshotButton atIndex:2];
+        [_toolbar setContentView:_eraseButton atIndex:1];
+        [_toolbar setContentView:_eraseAllButton atIndex:0];
+    }
+    
     [self.toolbar reloadToolbar];
 }
 
@@ -193,11 +211,10 @@ NSString * const kOTAnnotationToolbarDidAddTextAnnotation = @"kOTAnnotationToolb
 - (void)done {
     
     if (self.toolbarViewDelegate && [self.toolbarViewDelegate respondsToSelector:@selector(annotationToolbarViewAttemptToPressDoneButton:)]) {
-        BOOL done = [self.toolbarViewDelegate respondsToSelector:@selector(annotationToolbarViewAttemptToPressDoneButton:)];
+        BOOL done = [self.toolbarViewDelegate annotationToolbarViewAttemptToPressDoneButton:self];
         if (!done) {
             return;
         }
-        [self.toolbarViewDelegate annotationToolbarViewAttemptToPressDoneButton:self];
     }
     
     if ([self.annotationScrollView.annotationView.currentAnnotatable isKindOfClass:[OTAnnotationTextView class]]) {
@@ -206,13 +223,12 @@ NSString * const kOTAnnotationToolbarDidAddTextAnnotation = @"kOTAnnotationToolb
     }
     self.annotationScrollView.annotatable = NO;
     [self dismissColorPickerViewWithAniamtion:YES];
-    
-    UIDeviceOrientation orientation = [UIDevice currentDevice].orientation;
-    if (orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight) {
-        [self.toolbar removeContentViewAtIndex:6];
+
+    if (self.toolbarViewOrientation == OTAnnotationToolbarViewOrientationPortraitlBottom) {
+        [self.toolbar removeContentViewAtIndex:0];
     }
     else {
-        [self.toolbar removeContentViewAtIndex:0];
+        [self.toolbar removeContentViewAtIndex:6];
     }
     [self moveSelectionShadowViewTo:nil];
     [self resetToolbarButtons];
@@ -249,22 +265,22 @@ NSString * const kOTAnnotationToolbarDidAddTextAnnotation = @"kOTAnnotationToolb
     [_eraseAllButton setImage:[UIImage imageNamed:@"trashcan" inBundle:frameworkBundle compatibleWithTraitCollection:nil] forState:UIControlStateNormal];
     [_eraseAllButton addTarget:self action:@selector(toolbarButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
     
-    UIDeviceOrientation orientation = [UIDevice currentDevice].orientation;
-    if (orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight) {
-        [_toolbar setContentView:_annotateButton atIndex:5];
-        [_toolbar setContentView:_colorButton atIndex:4];
-        [_toolbar setContentView:_textButton atIndex:3];
-        [_toolbar setContentView:_screenshotButton atIndex:2];
-        [_toolbar setContentView:_eraseButton atIndex:1];
-        [_toolbar setContentView:_eraseAllButton atIndex:0];
-    }
-    else {
+    
+    if (self.toolbarViewOrientation == OTAnnotationToolbarViewOrientationPortraitlBottom) {
         [_toolbar setContentView:_annotateButton atIndex:0];
         [_toolbar setContentView:_colorButton atIndex:1];
         [_toolbar setContentView:_textButton atIndex:2];
         [_toolbar setContentView:_screenshotButton atIndex:3];
         [_toolbar setContentView:_eraseButton atIndex:4];
         [_toolbar setContentView:_eraseAllButton atIndex:5];
+    }
+    else {
+        [_toolbar setContentView:_annotateButton atIndex:5];
+        [_toolbar setContentView:_colorButton atIndex:4];
+        [_toolbar setContentView:_textButton atIndex:3];
+        [_toolbar setContentView:_screenshotButton atIndex:2];
+        [_toolbar setContentView:_eraseButton atIndex:1];
+        [_toolbar setContentView:_eraseAllButton atIndex:0];
     }
     
     [_toolbar reloadToolbar];
@@ -279,12 +295,11 @@ NSString * const kOTAnnotationToolbarDidAddTextAnnotation = @"kOTAnnotationToolb
         self.annotationScrollView.annotatable = YES;
         [self dismissColorPickerViewWithAniamtion:YES];
         if (![self.toolbar containedContentView:self.doneButton]) {
-            UIDeviceOrientation orientation = [UIDevice currentDevice].orientation;
-            if (orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight) {
-                [self.toolbar insertContentView:self.doneButton atIndex:6];
+            if (self.toolbarViewOrientation == OTAnnotationToolbarViewOrientationPortraitlBottom) {
+                [self.toolbar insertContentView:self.doneButton atIndex:0];
             }
             else {
-                [self.toolbar insertContentView:self.doneButton atIndex:0];
+                [self.toolbar insertContentView:self.doneButton atIndex:6];
             }
         }
         OTAnnotationPath *path = [[OTAnnotationPath alloc] initWithStrokeColor:self.colorPickerView.selectedColor];
@@ -302,12 +317,11 @@ NSString * const kOTAnnotationToolbarDidAddTextAnnotation = @"kOTAnnotationToolb
         [self moveSelectionShadowViewTo:nil];
         [self dismissColorPickerViewWithAniamtion:NO];
         if (![self.toolbar containedContentView:self.doneButton]) {
-            UIDeviceOrientation orientation = [UIDevice currentDevice].orientation;
-            if (orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight) {
-                [self.toolbar insertContentView:self.doneButton atIndex:6];
+            if (self.toolbarViewOrientation == OTAnnotationToolbarViewOrientationPortraitlBottom) {
+                [self.toolbar insertContentView:self.doneButton atIndex:0];
             }
             else {
-                [self.toolbar insertContentView:self.doneButton atIndex:0];
+                [self.toolbar insertContentView:self.doneButton atIndex:6];
             }
         }
         

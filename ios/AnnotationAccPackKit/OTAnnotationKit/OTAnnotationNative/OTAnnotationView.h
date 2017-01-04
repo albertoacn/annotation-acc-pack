@@ -4,9 +4,9 @@
 //  Copyright © 2016 Tokbox. All rights reserved.
 //
 
-#import <OTAnnotationKit/OTAnnotatable.h>
-#import <OTAnnotationKit/OTAnnotationDataManager.h>
-#import <OTAnnotationKit/OTAnnotationPath.h>
+#import "OTAnnotatable.h"
+#import "OTAnnotationDataManager.h"
+#import "OTAnnotationPath.h"
 
 @class OTAnnotationView;
 @protocol OTAnnotationViewDelegate <NSObject>
